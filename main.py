@@ -8,8 +8,8 @@ import schedule
 from telegram import Bot
 
 # --- CONFIGURAÇÕES ---
-TELEGRAM_TOKEN = os.getenv("6620673021:AAEFh0H-0iKNAZCnfEE9IwCnqRYoVeZ3vNY")
-CHAT_ID = os.getenv("6325710382")  # Seu ID de usuário ou canal
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")  # Seu ID de usuário ou canal
 REGION_URL = "https://www.pciconcursos.com.br/concursos/nordeste/"  # Altere para a região/URL desejada
 
 app = Flask(__name__)
