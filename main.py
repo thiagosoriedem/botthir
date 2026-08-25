@@ -2,7 +2,7 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, jsonify, request
 import requests
 
 app = Flask(__name__)
@@ -14,6 +14,7 @@ CHAT_ID = os.getenv("CHAT_ID")
 REGION_URL = "https://www.pciconcursos.com.br/concursos/nordeste/"
 
 
+# --- SCRAPING DO PCI CONCURSOS ---
 def fetch_pci_jobs():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -54,49 +55,54 @@ def fetch_pci_jobs():
         return []
 
 
-def send_telegram_message(text):
-    if not TELEGRAM_TOKEN or not CHAT_ID:
-        print("TELEGRAM_TOKEN ou CHAT_ID não definidos.")
+# --- ENVIO DE MENSAGENS TELEGRAM ---
+def send_telegram_message(target_chat_id, text):
+    if not TELEGRAM_TOKEN:
+        print("TELEGRAM_TOKEN não definido.")
         return False
 
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {
-        "chat_id": CHAT_ID,
+        "chat_id": target_chat_id,
         "text": text,
         "parse_mode": "Markdown",
         "disable_web_page_preview": True,
     }
 
-    response = requests.post(url, json=payload)
+    response = requests.post(url, json=payload, timeout=10)
     return response.status_code == 200
 
 
+# --- DISPARO AGENDADO DIÁRIO ---
 def scheduled_job():
-    """Função executada automaticamente pelo agendador."""
-    print("⏰ Executando disparo agendado das 19:00...")
+    print("⏰ Executando disparo agendado das 18:50...")
+    if not CHAT_ID:
+        print("CHAT_ID não definido para envio automático.")
+        return
+
     jobs = fetch_pci_jobs()
     if not jobs:
         print("Nenhum concurso encontrado no horário agendado.")
         return
 
-    message = "🚀 *Atualização PCI Concursos (Diária)* 🚀\n\n" + "\n\n".join(
-        jobs
-    )
+    message = "🚀 *Atualização PCI Concursos (Diária)* 🚀\n\n" + "\n\n".join(jobs)
 
     if len(message) > 4000:
         for chunk in [
             message[i : i + 4000] for i in range(0, len(message), 4000)
         ]:
-            send_telegram_message(chunk)
+            send_telegram_message(CHAT_ID, chunk)
     else:
-        send_telegram_message(message)
+        send_telegram_message(CHAT_ID, message)
 
+
+# --- CONFIGURAÇÃO DO AGENDADOR (18h50 - Horário de Brasília/Fortaleza) ---
 scheduler = BackgroundScheduler(timezone="America/Fortaleza")
 scheduler.add_job(scheduled_job, "cron", hour=19, minute=00)
 scheduler.start()
 
 
-# --- ROTAS WEB ---
+# --- ROTAS WEB E WEBHOOK ---
 
 
 @app.route("/")
@@ -106,9 +112,46 @@ def home():
 
 @app.route("/concursos")
 def trigger_concursos():
-    # Continua permitindo o disparo manual a qualquer momento via URL
     scheduled_job()
     return "✅ Concursos enviados para o Telegram com sucesso!", 200
+
+
+# Rota Webhook para ler mensagens e comandos do Telegram em tempo real
+@app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
+def telegram_webhook():
+    data = request.get_json()
+
+    if not data or "message" not in data:
+        return jsonify({"status": "ignored"}), 200
+
+    message = data["message"]
+    chat_id = message["chat"]["id"]
+    text = message.get("text", "").strip()
+
+    if text == "/start":
+        send_telegram_message(
+            chat_id,
+            "👋 Olá! Envie o comando */concursos* para receber a lista dos últimos concursos.",
+        )
+    elif text == "/concursos":
+        send_telegram_message(chat_id, "🔎 Buscando concursos no PCI...")
+        jobs = fetch_pci_jobs()
+
+        if not jobs:
+            send_telegram_message(
+                chat_id, "Nenhum concurso encontrado no momento."
+            )
+        else:
+            msg = "🚀 *Últimos Concursos - PCI* 🚀\n\n" + "\n\n".join(jobs)
+            if len(msg) > 4000:
+                for chunk in [
+                    msg[i : i + 4000] for i in range(0, len(msg), 4000)
+                ]:
+                    send_telegram_message(chat_id, chunk)
+            else:
+                send_telegram_message(chat_id, msg)
+
+    return jsonify({"status": "ok"}), 200
 
 
 if __name__ == "__main__":
