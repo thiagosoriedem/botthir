@@ -1,8 +1,9 @@
 import os
+from apscheduler.schedulers.background import BackgroundScheduler
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from flask import Flask
 import requests
-from dotenv import load_dotenv
 
 app = Flask(__name__)
 load_dotenv()
@@ -59,34 +60,29 @@ def send_telegram_message(text):
         return False
 
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": text,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": True,
+    }
 
     response = requests.post(url, json=payload)
     return response.status_code == 200
 
 
-# --- ROTAS WEB ---
-
-
-@app.route("/")
-def home():
-    # Rota usada pelo UptimeRobot para manter o Render acordado
-    return "Servidor PCI Concursos Ativo!", 200
-
-
-@app.route("/concursos")
-def trigger_concursos():
-    # Rota que você acessa para disparar as notícias
+def scheduled_job():
+    """Função executada automaticamente pelo agendador."""
+    print("⏰ Executando disparo agendado das 19:00...")
     jobs = fetch_pci_jobs()
-
     if not jobs:
-        return "Nenhum concurso encontrado.", 404
+        print("Nenhum concurso encontrado no horário agendado.")
+        return
 
-    message = (
-        "🚀 *Atualização PCI Concursos* 🚀\n\n" + "\n\n".join(jobs)
+    message = "🚀 *Atualização PCI Concursos (Diária)* 🚀\n\n" + "\n\n".join(
+        jobs
     )
 
-    # Trata limite de caracteres do Telegram (4000)
     if len(message) > 4000:
         for chunk in [
             message[i : i + 4000] for i in range(0, len(message), 4000)
@@ -95,6 +91,23 @@ def trigger_concursos():
     else:
         send_telegram_message(message)
 
+scheduler = BackgroundScheduler(timezone="America/Fortaleza")
+scheduler.add_job(scheduled_job, "cron", hour=19, minute=00)
+scheduler.start()
+
+
+# --- ROTAS WEB ---
+
+
+@app.route("/")
+def home():
+    return "Servidor PCI Concursos Ativo!", 200
+
+
+@app.route("/concursos")
+def trigger_concursos():
+    # Continua permitindo o disparo manual a qualquer momento via URL
+    scheduled_job()
     return "✅ Concursos enviados para o Telegram com sucesso!", 200
 
 
