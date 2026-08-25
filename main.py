@@ -1,32 +1,16 @@
-import asyncio
 import os
-import threading
 from bs4 import BeautifulSoup
 from flask import Flask
 import requests
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
 
-# --- CONFIGURAÇÕES ---
+app = Flask(__name__)
+
+# Configurações do ambiente no Render
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 REGION_URL = "https://www.pciconcursos.com.br/concursos/nordeste/"
 
-app = Flask(__name__)
 
-
-# --- 1. ROTA WEB PARA O RENDER ---
-@app.route("/")
-def health_check():
-    return "Bot PCI Concursos está ativo!", 200
-
-
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
-
-
-# --- 2. SCRAPING DO PCI CONCURSOS ---
 def fetch_pci_jobs():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -58,7 +42,7 @@ def fetch_pci_jobs():
             )
 
             concursos.append(
-                f"📌 **{titulo}**\n🎯 Vagas/Salário: {vagas}\n🎓 Nível: {nivel}\n🔗 [Link]({link})"
+                f"📌 *{titulo}*\n🎯 Vagas/Salário: {vagas}\n🎓 Nível: {nivel}\n🔗 {link}"
             )
 
         return concursos[:10]
@@ -67,83 +51,51 @@ def fetch_pci_jobs():
         return []
 
 
-# --- 3. COMANDOS DO TELEGRAM ---
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "👋 Olá! Use o comando /concursos para listar as últimas oportunidades do PCI Concursos."
-    )
+def send_telegram_message(text):
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        print("TELEGRAM_TOKEN ou CHAT_ID não definidos.")
+        return False
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
+
+    response = requests.post(url, json=payload)
+    return response.status_code == 200
 
 
-async def concursos_command(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-):
-    await update.message.reply_text("🔎 Buscando concursos atualizados...")
+# --- ROTAS WEB ---
+
+
+@app.route("/")
+def home():
+    # Rota usada pelo UptimeRobot para manter o Render acordado
+    return "Servidor PCI Concursos Ativo!", 200
+
+
+@app.route("/concursos")
+def trigger_concursos():
+    # Rota que você acessa para disparar as notícias
     jobs = fetch_pci_jobs()
 
     if not jobs:
-        await update.message.reply_text("Nenhum concurso encontrado no momento.")
-        return
+        return "Nenhum concurso encontrado.", 404
 
     message = (
-        "🚀 **Últimos Concursos - PCI Concursos** 🚀\n\n" + "\n\n".join(jobs)
+        "🚀 *Atualização PCI Concursos* 🚀\n\n" + "\n\n".join(jobs)
     )
 
+    # Trata limite de caracteres do Telegram (4000)
     if len(message) > 4000:
         for chunk in [
             message[i : i + 4000] for i in range(0, len(message), 4000)
         ]:
-            await update.message.reply_text(chunk, parse_mode="Markdown")
+            send_telegram_message(chunk)
     else:
-        await update.message.reply_text(message, parse_mode="Markdown")
+        send_telegram_message(message)
 
-
-# --- 4. TAREFA RECORRENTE DIÁRIA ---
-async def send_daily_job(context: ContextTypes.DEFAULT_TYPE):
-    if not CHAT_ID:
-        return
-
-    jobs = fetch_pci_jobs()
-    if jobs:
-        message = (
-            "🚀 **Atualização Diária - PCI Concursos** 🚀\n\n"
-            + "\n\n".join(jobs)
-        )
-        await context.bot.send_message(
-            chat_id=CHAT_ID, text=message, parse_mode="Markdown"
-        )
-
-
-# --- 5. INICIALIZAÇÃO DO BOT E SCHEDULER ---
-def main():
-    if not TELEGRAM_TOKEN:
-        raise ValueError(
-            "TELEGRAM_TOKEN não foi encontrado nas variáveis de ambiente."
-        )
-
-    # Inicia o servidor Flask em background
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.daemon = True
-    flask_thread.start()
-
-    # Configura a aplicação do Telegram
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
-
-    # Adiciona os manipuladores de comando
-    application.add_handler(CommandHandler("start", start_command))
-    application.add_handler(CommandHandler("concursos", concursos_command))
-
-    # Configura o envio automático diário usando o JobQueue interno da biblioteca
-    if application.job_queue and CHAT_ID:
-        import datetime
-
-        # Agenda para rodar diariamente às 08:00 (UTC)
-        application.job_queue.run_daily(
-            send_daily_job, time=datetime.time(hour=8, minute=0, second=0)
-        )
-
-    # Inicia a escuta de comandos via Polling
-    application.run_polling()
+    return "✅ Concursos enviados para o Telegram com sucesso!", 200
 
 
 if __name__ == "__main__":
-    main()
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
