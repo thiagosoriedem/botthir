@@ -2,8 +2,10 @@ import os
 from bs4 import BeautifulSoup
 from flask import Flask
 import requests
+from dotenv import load_dotenv
 
 app = Flask(__name__)
+load_dotenv()
 
 # Configurações do ambiente no Render
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
