@@ -1,7 +1,7 @@
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import requests
 from modules.ia import responder_duvida, get_status_uso
 
@@ -43,7 +43,7 @@ def answer_callback_query(callback_query_id, text=""):
     payload = {"callback_query_id": callback_query_id, "text": text}
     requests.post(url, json=payload, timeout=10)
 
-
+APP_URL = "https://botthir.onrender.com"
 # --- MENUS DO AGENTE PESSOAL ---
 def get_main_menu_keyboard():
     """Menu Principal do seu Agente Pessoal."""
@@ -56,6 +56,9 @@ def get_main_menu_keyboard():
             [
                 {"text": "💸 Gestão Financeira", "callback_data": "menu_financas"},
                 {"text": "🤖 Perguntar à IA", "callback_data": "menu_ia"},
+            ],
+            [
+                {"text": "🧠 Abrir App de Flashcards", "web_app": {"url": f"{APP_URL}/flashcards"}}
             ],
         ]
     }
@@ -93,6 +96,9 @@ scheduler.start()
 def home():
     return "Servidor Agente Pessoal Ativo!", 200
 
+@app.route("/flashcards")
+def flashcards_app():
+    return render_template("flashcards.html")
 
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def telegram_webhook():

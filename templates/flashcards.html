@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repetição Espaçada - Flashcards</title>
+    <!-- SDK do Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #f4f6f9);
+            --text-color: var(--tg-theme-text-color, #222);
+            --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+            --button-color: var(--tg-theme-button-color, #0088cc);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 90vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .card:active {
+            transform: scale(0.98);
+        }
+
+        .label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+            margin-bottom: 10px;
+        }
+
+        .text {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn:active { opacity: 0.8; }
+        .btn-errei { background-color: #e74c3c; }
+        .btn-bom { background-color: #f39c12; }
+        .btn-facil { background-color: #2ecc71; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="deck-view">
+        <div class="card" onclick="virarCard()">
+            <div class="label" id="card-status">Pergunta</div>
+            <div class="text" id="card-content">Carregando seus flashcards...</div>
+        </div>
+
+        <div id="action-buttons" class="buttons hidden">
+            <button class="btn btn-errei" onclick="responder(1)">Errei</button>
+            <button class="btn btn-bom" onclick="responder(3)">Bom</button>
+            <button class="btn btn-facil" onclick="responder(5)">Fácil</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Expande o WebApp para tela cheia no Telegram
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+
+    // Exemplos de Flashcards (Em um app completo, pode puxar via API Flask)
+    const flashcards = [
+        { pergunta: "Qual a diferença entre `.cd` e `.ce` no PCI?", resposta: ".cd traz a data de inscrição e .ce traz o nível e vagas." },
+        { pergunta: "O que é Repetição Espaçada?", resposta: "Técnica de memorização que revisa a informação em intervalos espaçados calculados." },
+        { pergunta: "Como criar uma lista em Python?", resposta: "Utilizando colchetes: minha_lista = []" }
+    ];
+
+    let currentIndex = 0;
+    let mostrandoResposta = false;
+
+    function carregarCard() {
+        if (currentIndex >= flashcards.length) {
+            document.getElementById('card-status').innerText = "Parabéns!";
+            document.getElementById('card-content').innerText = "🎉 Você revisou todos os cards de hoje!";
+            document.getElementById('action-buttons').classList.add('hidden');
+            return;
+        }
+
+        mostrandoResposta = false;
+        document.getElementById('card-status').innerText = "Pergunta";
+        document.getElementById('card-content').innerText = flashcards[currentIndex].pergunta;
+        document.getElementById('action-buttons').classList.add('hidden');
+    }
+
+    function virarCard() {
+        if (currentIndex >= flashcards.length) return;
+
+        mostrandoResposta = !mostrandoResposta;
+        if (mostrandoResposta) {
+            document.getElementById('card-status').innerText = "Resposta";
+            document.getElementById('card-content').innerText = flashcards[currentIndex].resposta;
+            document.getElementById('action-buttons').classList.remove('hidden');
+        } else {
+            document.getElementById('card-status').innerText = "Pergunta";
+            document.getElementById('card-content').innerText = flashcards[currentIndex].pergunta;
+            document.getElementById('action-buttons').classList.add('hidden');
+        }
+    }
+
+    function responder(dificuldade) {
+        // Lógica de agendamento pode ser enviada ao backend
+        currentIndex++;
+        carregarCard();
+    }
+
+    carregarCard();
+</script>
+</body>
+</html>
