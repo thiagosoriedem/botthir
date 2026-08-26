@@ -3,6 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 import requests
+from modules.ia import responder_duvida
 
 # Importação dos Módulos
 from modules.concursos import (
@@ -99,7 +100,7 @@ def telegram_webhook():
     if not data:
         return jsonify({"status": "ignored"}), 200
 
-    # 1. Trata Mensagens / Comandos
+# 1. Trata Mensagens / Comandos
     if "message" in data:
         message = data["message"]
         chat_id = message["chat"]["id"]
@@ -113,6 +114,15 @@ def telegram_webhook():
             send_telegram_message(
                 chat_id, msg_texto, reply_markup=get_main_menu_keyboard()
             )
+        
+        # Qualquer outro texto enviado é processado como dúvida para a IA
+        elif text:
+            send_telegram_message(chat_id, "🧠 *Pensando...*")
+            resposta_ia = responder_duvida(text)
+            
+            # Teclado para voltar ao menu
+            keyboard = {"inline_keyboard": [[{"text": "🏠 Menu Principal", "callback_data": "main_menu"}]]}
+            send_telegram_message(chat_id, resposta_ia, reply_markup=keyboard)
 
     # 2. Trata Cliques em Botões Inline
     elif "callback_query" in data:
@@ -137,6 +147,15 @@ def telegram_webhook():
                 chat_id,
                 "🏛️ *Módulo de Concursos PCI*\n\nEscolha o estado desejado:",
                 reply_markup=get_concursos_state_keyboard(),
+            )
+
+        #MODULO IA
+        elif data_code == "menu_ia":
+            send_telegram_message(
+                chat_id,
+                "🤖 *Módulo de Inteligência Artificial*\n\n"
+                "Pode me enviar qualquer dúvida, pergunta de estudo ou texto diretamente aqui no chat que eu te respondo!",
+                reply_markup={"inline_keyboard": [[{"text": "🏠 Voltar", "callback_data": "main_menu"}]]},
             )
 
         elif data_code.startswith("page_"):
