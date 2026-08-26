@@ -27,41 +27,7 @@ def fetch_pci_jobs(filtro_estado=""):
         soup = BeautifulSoup(response.content, "html.parser")
         concursos = []
 
-        # 1. Se um estado for especificado (ex: PB, PE), busca apenas dentro da div correspondente
-        if filtro_estado and filtro_estado.upper() != "ALL":
-            sigla = filtro_estado.upper()
-            # Procura por <div id="PB"> ou elementos com id do estado
-            container_estado = soup.find(id=sigla) or soup.find(
-                class_=sigla.lower()
-            )
-
-            if container_estado:
-                # Busca os itens de concurso apenas dentro do bloco do estado
-                itens = container_estado.select(".ca")
-            else:
-                # Fallback: se não achar a ID exata, filtra por links que contêm a sigla do estado
-                itens = [
-                    item
-                    for item in soup.select(".ca")
-                    if f"/{sigla.lower()}/"
-                    in (
-                        item.select_one("a")["href"].lower()
-                        if item.select_one("a")
-                        else ""
-                    )
-                    or f"-{sigla.lower()}"
-                    in (
-                        item.select_one("a")["href"].lower()
-                        if item.select_one("a")
-                        else ""
-                    )
-                ]
-        else:
-            # Se for "ALL" ou vazio, pega da página toda
-            itens = soup.select(".ca")
-
-        # 2. Processa os itens encontrados
-        for item in itens:
+        for item in soup.select(".ca"):
             link_elem = item.select_one("a")
             if not link_elem:
                 continue
@@ -69,10 +35,7 @@ def fetch_pci_jobs(filtro_estado=""):
             titulo = link_elem.text.strip()
             link = link_elem["href"]
 
-            # Garante que o link seja absoluto
-            if link.startswith("/"):
-                link = f"https://www.pciconcursos.com.br{link}"
-
+            # Extração dos blocos de dados
             cd_text = (
                 item.select_one(".cd").text.strip()
                 if item.select_one(".cd")
@@ -84,7 +47,7 @@ def fetch_pci_jobs(filtro_estado=""):
                 else ""
             )
 
-            # Identifica qual campo contém a data de inscrição
+            # Identifica qual das tags contém a data (Formato XX/XX/XXXX)
             data_limite = "N/A"
             vagas_detalhes = ""
 
@@ -97,7 +60,7 @@ def fetch_pci_jobs(filtro_estado=""):
             else:
                 vagas_detalhes = f"{cd_text} {ce_text}".strip()
 
-            # Extrai o Nível de Escolaridade
+            # Extrai e limpa o nível de escolaridade do texto de vagas
             nivel = "N/A"
             niveis_possiveis = [
                 "Superior",
@@ -108,14 +71,23 @@ def fetch_pci_jobs(filtro_estado=""):
             ]
 
             for n in niveis_possiveis:
-                if n.lower() in vagas_detalhes.lower():
+                if n in vagas_detalhes:
                     nivel = n
+                    # Remove repetições do nível no texto de vagas
                     vagas_detalhes = re.sub(
                         rf"\b{n}\b", "", vagas_detalhes, flags=re.IGNORECASE
                     ).strip()
                     break
 
-            # Formata o card em Markdown
+            # Aplica filtro de estado se necessário
+            if filtro_estado and (
+                f"/{filtro_estado.lower()}" not in link.lower()
+                and f"-{filtro_estado.lower()}" not in titulo.lower()
+                and f" {filtro_estado.upper()}" not in titulo.upper()
+            ):
+                continue
+
+            # Montagem da mensagem formatada em Markdown
             card = (
                 f"🏛️ *{titulo}*\n"
                 f"🎓 *Nível:* {nivel}\n"
@@ -127,7 +99,6 @@ def fetch_pci_jobs(filtro_estado=""):
             concursos.append(card)
 
         return concursos[:10]
-
     except Exception as e:
         print(f"Erro no scraping: {e}")
         return []
