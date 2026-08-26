@@ -1,10 +1,12 @@
 import json
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore
 
 # Inicializa o Firebase Admin SDK
+load_dotenv()
 cred_env = os.getenv("FIREBASE_CREDENTIALS")
 
 if cred_env:
