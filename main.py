@@ -8,14 +8,14 @@ import requests
 app = Flask(__name__)
 load_dotenv()
 
-# Configurações do ambiente no Render
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 REGION_URL = "https://www.pciconcursos.com.br/concursos/nordeste/"
+ESTADO_FILTRO_PADRAO = os.getenv("ESTADO_FILTRO", "PB").upper()
 
 
 # --- SCRAPING DO PCI CONCURSOS ---
-def fetch_pci_jobs():
+def fetch_pci_jobs(filtro_estado=""):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
@@ -45,6 +45,14 @@ def fetch_pci_jobs():
                 else "N/A"
             )
 
+            # Aplica o filtro por estado na URL ou no título
+            if filtro_estado and (
+                f"/{filtro_estado.lower()}" not in link.lower()
+                and f"-{filtro_estado.lower()}" not in titulo.lower()
+                and f" {filtro_estado.upper()}" not in titulo.upper()
+            ):
+                continue
+
             concursos.append(
                 f"📌 *{titulo}*\n🎯 Vagas/Salário: {vagas}\n🎓 Nível: {nivel}\n🔗 {link}"
             )
@@ -55,10 +63,9 @@ def fetch_pci_jobs():
         return []
 
 
-# --- ENVIO DE MENSAGENS TELEGRAM ---
-def send_telegram_message(target_chat_id, text):
+# --- FUNÇÕES TELEGRAM ---
+def send_telegram_message(target_chat_id, text, reply_markup=None):
     if not TELEGRAM_TOKEN:
-        print("TELEGRAM_TOKEN não definido.")
         return False
 
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -68,43 +75,68 @@ def send_telegram_message(target_chat_id, text):
         "parse_mode": "Markdown",
         "disable_web_page_preview": True,
     }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
 
     response = requests.post(url, json=payload, timeout=10)
     return response.status_code == 200
+
+
+def answer_callback_query(callback_query_id, text=""):
+    """Notifica o Telegram que o clique no botão foi recebido."""
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/answerCallbackQuery"
+    payload = {"callback_query_id": callback_query_id, "text": text}
+    requests.post(url, json=payload, timeout=10)
+
+
+def get_state_keyboard():
+    """Retorna o teclado com botões inline para seleção de estado."""
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "🌵 Paraíba (PB)", "callback_data": "filtro_PB"},
+                {"text": "🌊 Pernambuco (PE)", "callback_data": "filtro_PE"},
+            ],
+            [
+                {"text": "☀️ Ceará (CE)", "callback_data": "filtro_CE"},
+                {"text": "🌴 Rio Grande do Norte (RN)", "callback_data": "filtro_RN"},
+            ],
+            [
+                {"text": "🌐 Ver Todos (Nordeste)", "callback_data": "filtro_ALL"}
+            ],
+        ]
+    }
 
 
 # --- DISPARO AGENDADO DIÁRIO ---
 def scheduled_job():
     print("⏰ Executando disparo agendado das 18:50...")
     if not CHAT_ID:
-        print("CHAT_ID não definido para envio automático.")
         return
 
-    jobs = fetch_pci_jobs()
+    jobs = fetch_pci_jobs(filtro_estado=ESTADO_FILTRO_PADRAO)
+    tag_foco = f"Foco: {ESTADO_FILTRO_PADRAO}" if jobs else "Nordeste (Geral)"
     if not jobs:
-        print("Nenhum concurso encontrado no horário agendado.")
+        jobs = fetch_pci_jobs()
+
+    if not jobs:
         return
 
-    message = "🚀 *Atualização PCI Concursos (Diária)* 🚀\n\n" + "\n\n".join(jobs)
+    message = f"🚀 *Atualização PCI Concursos ({tag_foco})* 🚀\n\n" + "\n\n".join(jobs)
 
     if len(message) > 4000:
-        for chunk in [
-            message[i : i + 4000] for i in range(0, len(message), 4000)
-        ]:
+        for chunk in [message[i : i + 4000] for i in range(0, len(message), 4000)]:
             send_telegram_message(CHAT_ID, chunk)
     else:
         send_telegram_message(CHAT_ID, message)
 
 
-# --- CONFIGURAÇÃO DO AGENDADOR (18h50 - Horário de Brasília/Fortaleza) ---
 scheduler = BackgroundScheduler(timezone="America/Fortaleza")
-scheduler.add_job(scheduled_job, "cron", hour=19, minute=00)
+scheduler.add_job(scheduled_job, "cron", hour=18, minute=50)
 scheduler.start()
 
 
-# --- ROTAS WEB E WEBHOOK ---
-
-
+# --- ROTAS WEB ---
 @app.route("/")
 def home():
     return "Servidor PCI Concursos Ativo!", 200
@@ -116,40 +148,60 @@ def trigger_concursos():
     return "✅ Concursos enviados para o Telegram com sucesso!", 200
 
 
-# Rota Webhook para ler mensagens e comandos do Telegram em tempo real
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def telegram_webhook():
     data = request.get_json()
-
-    if not data or "message" not in data:
+    if not data:
         return jsonify({"status": "ignored"}), 200
 
-    message = data["message"]
-    chat_id = message["chat"]["id"]
-    text = message.get("text", "").strip()
+    # 1. Trata mensagens normais e comandos (/start, /concursos)
+    if "message" in data:
+        message = data["message"]
+        chat_id = message["chat"]["id"]
+        text = message.get("text", "").strip()
 
-    if text == "/start":
-        send_telegram_message(
-            chat_id,
-            "👋 Olá! Envie o comando */concursos* para receber a lista dos últimos concursos.",
-        )
-    elif text == "/concursos":
-        send_telegram_message(chat_id, "🔎 Buscando concursos no PCI...")
-        jobs = fetch_pci_jobs()
-
-        if not jobs:
-            send_telegram_message(
-                chat_id, "Nenhum concurso encontrado no momento."
+        if text == "/start" or text == "/concursos":
+            msg_texto = (
+                "👋 *Bem-vindo ao Bot PCI Concursos!*\n\n"
+                "Escolha abaixo o estado que deseja consultar:"
             )
-        else:
-            msg = "🚀 *Últimos Concursos - PCI* 🚀\n\n" + "\n\n".join(jobs)
-            if len(msg) > 4000:
-                for chunk in [
-                    msg[i : i + 4000] for i in range(0, len(msg), 4000)
-                ]:
-                    send_telegram_message(chat_id, chunk)
+            send_telegram_message(
+                chat_id, msg_texto, reply_markup=get_state_keyboard()
+            )
+
+    # 2. Trata cliques nos botões (Callback Queries)
+    elif "callback_query" in data:
+        callback = data["callback_query"]
+        callback_id = callback["id"]
+        chat_id = callback["message"]["chat"]["id"]
+        data_code = callback.get("data", "")
+
+        # Responde o clique imediatamente para remover a animação de carregamento do botão
+        answer_callback_query(callback_id, "Buscando concursos...")
+
+        if data_code.startswith("filtro_"):
+            sigla = data_code.replace("filtro_", "")
+            filtro = "" if sigla == "ALL" else sigla
+            label_estado = "Nordeste (Geral)" if sigla == "ALL" else f"Estado: {sigla}"
+
+            send_telegram_message(chat_id, f"🔎 *Buscando vagas para {label_estado}...*")
+            jobs = fetch_pci_jobs(filtro_estado=filtro)
+
+            if not jobs:
+                send_telegram_message(
+                    chat_id,
+                    f"Nenhum concurso aberto encontrado para *{label_estado}* no momento.",
+                    reply_markup=get_state_keyboard(),
+                )
             else:
-                send_telegram_message(chat_id, msg)
+                msg = f"🚀 *Últimos Concursos ({label_estado})* 🚀\n\n" + "\n\n".join(jobs)
+                if len(msg) > 4000:
+                    for chunk in [
+                        msg[i : i + 4000] for i in range(0, len(msg), 4000)
+                    ]:
+                        send_telegram_message(chat_id, chunk)
+                else:
+                    send_telegram_message(chat_id, msg)
 
     return jsonify({"status": "ok"}), 200
 
