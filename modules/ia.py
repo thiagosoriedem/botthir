@@ -6,7 +6,6 @@ from google.genai import types
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-# Limite diário gratuito do Gemini 2.5 Flash
 LIMITE_DIARIO_GRATUITO = 250
 
 uso_diario = {
@@ -16,7 +15,7 @@ uso_diario = {
 
 
 def _atualizar_contador():
-    """Garante o reset do contador diário à meia-noite."""
+    """Reseta o contador diário à meia-noite."""
     hoje = datetime.now().strftime("%Y-%m-%d")
     if uso_diario["data"] != hoje:
         uso_diario["data"] = hoje
@@ -24,7 +23,7 @@ def _atualizar_contador():
 
 
 def get_status_uso():
-    """Gera barra visual de consumo do limite gratuito."""
+    """Retorna o consumo atual do limite diário."""
     _atualizar_contador()
     usadas = uso_diario["requisicoes"]
     restantes = max(0, LIMITE_DIARIO_GRATUITO - usadas)
@@ -42,7 +41,7 @@ def get_status_uso():
 
 
 def responder_duvida(pergunta_usuario):
-    """Envia a pergunta para a IA usando o modelo atualizado gemini-2.5-flash."""
+    """Envia a pergunta para a IA usando o modelo gemini-3.6-flash."""
     if not client:
         return "⚠️ A chave `GEMINI_API_KEY` não foi configurada nas variáveis de ambiente."
 
@@ -56,9 +55,8 @@ def responder_duvida(pergunta_usuario):
         )
 
     try:
-        # Modelo oficial recomendado pela API do Google
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=pergunta_usuario,
             config=types.GenerateContentConfig(
                 system_instruction="Você é o Assistente Pessoal do Thiago. Responda de forma direta e concisa.",
