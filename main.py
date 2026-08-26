@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, render_template
 import requests
 from modules.ia import responder_duvida, get_status_uso
+from modules.database import salvar_flashcard, obter_flashcards_usuario
 
 # Importação dos Módulos
 from modules.concursos import (
@@ -96,9 +97,33 @@ scheduler.start()
 def home():
     return "Servidor Agente Pessoal Ativo!", 200
 
+# Rota que entrega a página HTML do Mini App Flashcards
 @app.route("/flashcards")
 def flashcards_app():
     return render_template("flashcards.html")
+
+
+# API GET: Lista todos os cards do usuário
+@app.route("/api/flashcards/<int:user_id>", methods=["GET"])
+def get_user_cards(user_id):
+    deck = request.args.get("deck", "Geral")
+    cards = obter_flashcards_usuario(user_id, deck)
+    return jsonify({"status": "success", "cards": cards})
+
+
+# API POST: Salva um novo card via Telegram ou WebApp
+@app.route("/api/flashcards/<int:user_id>", methods=["POST"])
+def add_user_card(user_id):
+    data = request.get_json()
+    pergunta = data.get("pergunta")
+    resposta = data.get("resposta")
+    deck = data.get("deck", "Geral")
+
+    if not pergunta or not resposta:
+        return jsonify({"status": "error", "message": "Dados incompletos"}), 400
+
+    sucesso, msg = salvar_flashcard(user_id, deck, pergunta, resposta)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
 
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def telegram_webhook():

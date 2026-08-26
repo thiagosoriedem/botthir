@@ -97,7 +97,7 @@
     <div id="deck-view">
         <div class="card" onclick="virarCard()">
             <div class="label" id="card-status">Pergunta</div>
-            <div class="text" id="card-content">Carregando seus flashcards...</div>
+            <div class="text" id="card-content">Carregando seus flashcards do Firebase...</div>
         </div>
 
         <div id="action-buttons" class="buttons hidden">
@@ -113,17 +113,37 @@
     Telegram.WebApp.ready();
     Telegram.WebApp.expand();
 
-    // Exemplos de Flashcards (Em um app completo, pode puxar via API Flask)
-    const flashcards = [
-        { pergunta: "Qual a diferença entre `.cd` e `.ce` no PCI?", resposta: ".cd traz a data de inscrição e .ce traz o nível e vagas." },
-        { pergunta: "O que é Repetição Espaçada?", resposta: "Técnica de memorização que revisa a informação em intervalos espaçados calculados." },
-        { pergunta: "Como criar uma lista em Python?", resposta: "Utilizando colchetes: minha_lista = []" }
-    ];
+    // Obtém o Telegram User ID dinamicamente do contexto da conversa
+    const tgUser = Telegram.WebApp.initDataUnsafe?.user;
+    const userId = tgUser ? tgUser.id : 12345678; // ID de teste caso abra no navegador padrão
 
+    let flashcards = [];
     let currentIndex = 0;
     let mostrandoResposta = false;
 
-    function carregarCard() {
+    // Busca os dados dinamicamente da API Flask / Firebase
+    async function carregarCardsDoFirebase() {
+        try {
+            const response = await fetch(`/api/flashcards/${userId}?deck=Geral`);
+            const result = await response.json();
+
+            if (result.status === "success" && result.cards && result.cards.length > 0) {
+                flashcards = result.cards;
+                currentIndex = 0;
+                exibirCardAtual();
+            } else {
+                document.getElementById('card-status').innerText = "Vazio";
+                document.getElementById('card-content').innerText = "Nenhum flashcard encontrado. Crie um pelo Telegram!";
+                document.getElementById('action-buttons').classList.add('hidden');
+            }
+        } catch (err) {
+            console.error("Erro ao conectar com a API:", err);
+            document.getElementById('card-status').innerText = "Erro";
+            document.getElementById('card-content').innerText = "Falha ao carregar flashcards.";
+        }
+    }
+
+    function exibirCardAtual() {
         if (currentIndex >= flashcards.length) {
             document.getElementById('card-status').innerText = "Parabéns!";
             document.getElementById('card-content').innerText = "🎉 Você revisou todos os cards de hoje!";
@@ -138,7 +158,7 @@
     }
 
     function virarCard() {
-        if (currentIndex >= flashcards.length) return;
+        if (flashcards.length === 0 || currentIndex >= flashcards.length) return;
 
         mostrandoResposta = !mostrandoResposta;
         if (mostrandoResposta) {
@@ -152,13 +172,33 @@
         }
     }
 
-    function responder(dificuldade) {
-        // Lógica de agendamento pode ser enviada ao backend
+    async function responder(dificuldade) {
+        const cardAtual = flashcards[currentIndex];
+
+        // Avança a interface localmente para resposta rápida
         currentIndex++;
-        carregarCard();
+        exibirCardAtual();
+
+        // Envia o feedback da revisão em segundo plano (se o card tiver um ID registrado no Firebase)
+        if (cardAtual && cardAtual.id) {
+            try {
+                await fetch(`/api/flashcards/${userId}/review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        card_id: cardAtual.id,
+                        dificuldade: dificuldade,
+                        deck: "Geral"
+                    })
+                });
+            } catch (err) {
+                console.error("Erro ao enviar resposta:", err);
+            }
+        }
     }
 
-    carregarCard();
+    // Inicializa a aplicação carregando os dados do backend
+    carregarCardsDoFirebase();
 </script>
 </body>
 </html>
