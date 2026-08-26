@@ -6,10 +6,9 @@ from google.genai import types
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-# Limite diário do plano gratuito do Gemini (Gratuito: 250 requisições/dia)
+# Limite diário gratuito do Gemini 2.5 Flash
 LIMITE_DIARIO_GRATUITO = 250
 
-# Controle local do uso diário
 uso_diario = {
     "data": datetime.now().strftime("%Y-%m-%d"),
     "requisicoes": 0
@@ -17,7 +16,7 @@ uso_diario = {
 
 
 def _atualizar_contador():
-    """Garante que o contador resete quando o dia mudar."""
+    """Garante o reset do contador diário à meia-noite."""
     hoje = datetime.now().strftime("%Y-%m-%d")
     if uso_diario["data"] != hoje:
         uso_diario["data"] = hoje
@@ -25,13 +24,12 @@ def _atualizar_contador():
 
 
 def get_status_uso():
-    """Retorna uma string formatada com o status atual do limite gratuito."""
+    """Gera barra visual de consumo do limite gratuito."""
     _atualizar_contador()
     usadas = uso_diario["requisicoes"]
     restantes = max(0, LIMITE_DIARIO_GRATUITO - usadas)
     porcentagem = min(100, int((usadas / LIMITE_DIARIO_GRATUITO) * 100))
 
-    # Barra de progresso visual
     blocos_preenchidos = int(porcentagem / 10)
     barra = "▓" * blocos_preenchidos + "░" * (10 - blocos_preenchidos)
 
@@ -44,9 +42,9 @@ def get_status_uso():
 
 
 def responder_duvida(pergunta_usuario):
-    """Envia a pergunta para a IA respeitando o limite diário configurado."""
+    """Envia a pergunta para a IA usando o modelo atualizado gemini-2.5-flash."""
     if not client:
-        return "⚠️ A chave `GEMINI_API_KEY` não foi configurada."
+        return "⚠️ A chave `GEMINI_API_KEY` não foi configurada nas variáveis de ambiente."
 
     _atualizar_contador()
 
@@ -58,6 +56,7 @@ def responder_duvida(pergunta_usuario):
         )
 
     try:
+        # Modelo oficial recomendado pela API do Google
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=pergunta_usuario,
@@ -68,7 +67,6 @@ def responder_duvida(pergunta_usuario):
             ),
         )
 
-        # Incrementa o uso após sucesso
         uso_diario["requisicoes"] += 1
         status = get_status_uso()
 
