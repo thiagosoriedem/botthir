@@ -1,5 +1,5 @@
 
-# 🚀 Bot Telegram - PCI Concursos
+# 🚀 Thir Agent
 
 Bot do Telegram construído em Python e Flask para raspagem automática de dados de novos concursos públicos cadastrados no site **PCI Concursos (Região Nordeste)**. 
 
