@@ -1,10 +1,11 @@
 import os
+import re
 from apscheduler.schedulers.background import BackgroundScheduler
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 import requests
-import re
+
 app = Flask(__name__)
 load_dotenv()
 
@@ -37,7 +38,7 @@ def fetch_pci_jobs(filtro_estado=""):
             cc_elem = item.select_one(".cc")
             estado_sigla = cc_elem.text.strip().upper() if cc_elem else ""
 
-            # FILTRAGEM PELA DIV CLASS "CC"
+            # Filtra pela sigla da div class "cc"
             if (
                 sigla_alvo
                 and sigla_alvo != "ALL"
@@ -92,7 +93,7 @@ def fetch_pci_jobs(filtro_estado=""):
                     ).strip()
                     break
 
-            # Montagem do card formatado
+            # Card formatado em Markdown
             card = (
                 f"🏛️ *{titulo}* [{estado_sigla}]\n"
                 f"🎓 *Nível:* {nivel}\n"
@@ -103,13 +104,14 @@ def fetch_pci_jobs(filtro_estado=""):
 
             concursos.append(card)
 
-        return concursos[:10]
+        return concursos
 
     except Exception as e:
         print(f"Erro no scraping: {e}")
         return []
 
-# --- FUNÇÕES TELEGRAM ---
+
+# --- FUNÇÕES AUXILIARES DO TELEGRAM ---
 def send_telegram_message(target_chat_id, text, reply_markup=None):
     if not TELEGRAM_TOKEN:
         return False
@@ -129,52 +131,70 @@ def send_telegram_message(target_chat_id, text, reply_markup=None):
 
 
 def answer_callback_query(callback_query_id, text=""):
-    """Notifica o Telegram que o clique no botão foi recebido."""
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/answerCallbackQuery"
     payload = {"callback_query_id": callback_query_id, "text": text}
     requests.post(url, json=payload, timeout=10)
 
 
 def get_state_keyboard():
-    """Retorna o teclado com botões inline para seleção de estado."""
+    """Teclado de seleção de estado inicial."""
     return {
         "inline_keyboard": [
             [
-                {"text": "🌵 Paraíba (PB)", "callback_data": "filtro_PB"},
-                {"text": "🌊 Pernambuco (PE)", "callback_data": "filtro_PE"},
+                {"text": "🌵 Paraíba (PB)", "callback_data": "page_PB_0"},
+                {"text": "🌊 Pernambuco (PE)", "callback_data": "page_PE_0"},
             ],
             [
-                {"text": "☀️ Ceará (CE)", "callback_data": "filtro_CE"},
-                {"text": "🌴 Rio Grande do Norte (RN)", "callback_data": "filtro_RN"},
+                {"text": "☀️ Ceará (CE)", "callback_data": "page_CE_0"},
+                {"text": "🌴 Rio Grande do Norte (RN)", "callback_data": "page_RN_0"},
             ],
             [
-                {"text": "🌐 Ver Todos (Nordeste)", "callback_data": "filtro_ALL"}
+                {"text": "🌐 Ver Todos (Nordeste)", "callback_data": "page_ALL_0"}
             ],
         ]
     }
 
 
-# --- DISPARO AGENDADO DIÁRIO ---
+def get_pagination_keyboard(sigla, next_offset, total_items):
+    """Teclado interativo de navegação e troca de estado."""
+    buttons = []
+    
+    # Se houver mais resultados, adiciona o botão de carregar mais
+    if next_offset < total_items:
+        buttons.append([
+            {
+                "text": f"➕ Carregar Mais ({next_offset}/{total_items})",
+                "callback_data": f"page_{sigla}_{next_offset}",
+            }
+        ])
+    
+    buttons.append([{"text": "🔙 Voltar ao Menu", "callback_data": "menu_inicial"}])
+    
+    return {"inline_keyboard": buttons}
+
+
+# --- AGENDADOR DIÁRIO ---
 def scheduled_job():
-    print("⏰ Executando disparo agendado das 18:50...")
+    print("⏰ Executando disparo agendado...")
     if not CHAT_ID:
         return
 
-    jobs = fetch_pci_jobs(filtro_estado=ESTADO_FILTRO_PADRAO)
-    tag_foco = f"Foco: {ESTADO_FILTRO_PADRAO}" if jobs else "Nordeste (Geral)"
-    if not jobs:
-        jobs = fetch_pci_jobs()
+    all_jobs = fetch_pci_jobs(filtro_estado=ESTADO_FILTRO_PADRAO)
+    tag_foco = f"Foco: {ESTADO_FILTRO_PADRAO}" if all_jobs else "Nordeste (Geral)"
+    if not all_jobs:
+        all_jobs = fetch_pci_jobs()
 
-    if not jobs:
+    if not all_jobs:
         return
 
+    # Pega os primeiros 5 concursos no disparo agendado
+    jobs = all_jobs[:5]
     message = f"🚀 *Atualização PCI Concursos ({tag_foco})* 🚀\n\n" + "\n\n".join(jobs)
-
-    if len(message) > 4000:
-        for chunk in [message[i : i + 4000] for i in range(0, len(message), 4000)]:
-            send_telegram_message(CHAT_ID, chunk)
-    else:
-        send_telegram_message(CHAT_ID, message)
+    
+    reply_markup = get_pagination_keyboard(
+        ESTADO_FILTRO_PADRAO if all_jobs else "ALL", 5, len(all_jobs)
+    )
+    send_telegram_message(CHAT_ID, message, reply_markup=reply_markup)
 
 
 scheduler = BackgroundScheduler(timezone="America/Fortaleza")
@@ -200,13 +220,13 @@ def telegram_webhook():
     if not data:
         return jsonify({"status": "ignored"}), 200
 
-    # 1. Trata mensagens normais e comandos (/start, /concursos)
+    # 1. Trata Comandos
     if "message" in data:
         message = data["message"]
         chat_id = message["chat"]["id"]
         text = message.get("text", "").strip()
 
-        if text == "/start" or text == "/concursos":
+        if text in ["/start", "/concursos"]:
             msg_texto = (
                 "👋 *Bem-vindo ao Bot PCI Concursos!*\n\n"
                 "Escolha abaixo o estado que deseja consultar:"
@@ -215,39 +235,52 @@ def telegram_webhook():
                 chat_id, msg_texto, reply_markup=get_state_keyboard()
             )
 
-    # 2. Trata cliques nos botões (Callback Queries)
+    # 2. Trata Botões Inline e Paginação
     elif "callback_query" in data:
         callback = data["callback_query"]
         callback_id = callback["id"]
         chat_id = callback["message"]["chat"]["id"]
         data_code = callback.get("data", "")
 
-        # Responde o clique imediatamente para remover a animação de carregamento do botão
-        answer_callback_query(callback_id, "Buscando concursos...")
+        answer_callback_query(callback_id, "Carregando...")
 
-        if data_code.startswith("filtro_"):
-            sigla = data_code.replace("filtro_", "")
+        if data_code == "menu_inicial":
+            send_telegram_message(
+                chat_id,
+                "Escolha o estado desejado:",
+                reply_markup=get_state_keyboard(),
+            )
+
+        elif data_code.startswith("page_"):
+            # O callback vem no formato: page_SIGLA_OFFSET (ex: page_PB_0, page_PB_5)
+            _, sigla, offset_str = data_code.split("_")
+            offset = int(offset_str)
+            limit = 5  # Exibe 5 concursos por bloco
+
             filtro = "" if sigla == "ALL" else sigla
             label_estado = "Nordeste (Geral)" if sigla == "ALL" else f"Estado: {sigla}"
 
-            send_telegram_message(chat_id, f"🔎 *Buscando vagas para {label_estado}...*")
-            jobs = fetch_pci_jobs(filtro_estado=filtro)
+            all_jobs = fetch_pci_jobs(filtro_estado=filtro)
+            total_items = len(all_jobs)
 
-            if not jobs:
+            if not all_jobs:
                 send_telegram_message(
                     chat_id,
-                    f"Nenhum concurso aberto encontrado para *{label_estado}* no momento.",
+                    f"Nenhum concurso encontrado para *{label_estado}*.",
                     reply_markup=get_state_keyboard(),
                 )
             else:
-                msg = f"🚀 *Últimos Concursos ({label_estado})* 🚀\n\n" + "\n\n".join(jobs)
-                if len(msg) > 4000:
-                    for chunk in [
-                        msg[i : i + 4000] for i in range(0, len(msg), 4000)
-                    ]:
-                        send_telegram_message(chat_id, chunk)
-                else:
-                    send_telegram_message(chat_id, msg)
+                # Fatiamento da lista para aplicar a paginação
+                page_jobs = all_jobs[offset : offset + limit]
+                next_offset = offset + len(page_jobs)
+
+                if page_jobs:
+                    msg = (
+                        f"🚀 *Concursos ({label_estado})* [{offset + 1}-{next_offset} de {total_items}]\n\n"
+                        + "\n\n".join(page_jobs)
+                    )
+                    reply_markup = get_pagination_keyboard(sigla, next_offset, total_items)
+                    send_telegram_message(chat_id, msg, reply_markup=reply_markup)
 
     return jsonify({"status": "ok"}), 200
 
