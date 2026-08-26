@@ -71,11 +71,12 @@
             display: flex;
             gap: 10px;
             width: 100%;
+            margin-bottom: 10px;
         }
 
         .btn {
             flex: 1;
-            padding: 14px;
+            padding: 12px;
             border: none;
             border-radius: 12px;
             font-weight: bold;
@@ -89,17 +90,11 @@
             opacity: 0.8;
         }
 
-        .btn-errei {
-            background-color: #e74c3c;
-        }
-
-        .btn-bom {
-            background-color: #f39c12;
-        }
-
-        .btn-facil {
-            background-color: #2ecc71;
-        }
+        .btn-errei { background-color: #e74c3c; }
+        .btn-bom { background-color: #f39c12; }
+        .btn-facil { background-color: #2ecc71; }
+        .btn-editar { background-color: #3498db; }
+        .btn-excluir { background-color: #7f8c8d; }
 
         .hidden {
             display: none !important;
@@ -110,55 +105,61 @@
 <body>
 
     <div class="container">
+        <!-- TELA DE LEITURA / REVISÃO -->
         <div id="deck-view">
             <div class="card" onclick="virarCard()">
                 <div class="label" id="card-status">Pergunta</div>
                 <div class="text" id="card-content">Carregando seus flashcards do Firebase...</div>
             </div>
 
+            <!-- Botões de Repetição Espaçada -->
             <div id="action-buttons" class="buttons hidden">
                 <button class="btn btn-errei" onclick="responder(1)">Errei</button>
                 <button class="btn btn-bom" onclick="responder(3)">Bom</button>
                 <button class="btn btn-facil" onclick="responder(5)">Fácil</button>
             </div>
+
+            <!-- Botões de Gerenciamento do Card Atual -->
+            <div id="manage-buttons" class="buttons hidden">
+                <button class="btn btn-editar" onclick="prepararEdicao()">✏️ Editar</button>
+                <button class="btn btn-excluir" onclick="deletarCardAtual()">🗑️ Excluir</button>
+            </div>
         </div>
-        <!-- Botão para alternar a tela de criação -->
+
+        <!-- Botão para Alternar Form de Criação -->
         <div style="margin-top: 15px;">
-            <button class="btn" style="background-color: var(--button-color);" onclick="alternarModoCriacao()">
+            <button class="btn" style="background-color: var(--button-color);" onclick="abrirModoCriacao()">
                 ➕ Criar Novo Flashcard
             </button>
         </div>
 
-        <!-- Formulário de Criação (oculto por padrão) -->
-        <div id="create-view" class="hidden"
-            style="margin-top: 20px; background: var(--card-bg); padding: 20px; border-radius: 16px;">
-            <h3>Novo Flashcard</h3>
+        <!-- FORMULÁRIO (Usado tanto para Criar quanto para Editar) -->
+        <div id="form-view" class="hidden" style="margin-top: 20px; background: var(--card-bg); padding: 20px; border-radius: 16px;">
+            <h3 id="form-title">Novo Flashcard</h3>
             <input type="text" id="input-pergunta" placeholder="Digite a Pergunta"
-                style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc;">
+                style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
             <textarea id="input-resposta" placeholder="Digite a Resposta"
-                style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc;"></textarea>
+                style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;"></textarea>
 
             <div class="buttons">
-                <button class="btn btn-facil" onclick="salvarNovoCard()">Salvar</button>
-                <button class="btn btn-errei" onclick="alternarModoCriacao()">Cancelar</button>
+                <button class="btn btn-facil" onclick="salvarCard()">Salvar</button>
+                <button class="btn btn-errei" onclick="cancelarFormulario()">Cancelar</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Expande o WebApp para tela cheia no Telegram
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();
 
-        // Obtém o Telegram User ID dinamicamente do contexto da conversa
         const tgUser = Telegram.WebApp.initDataUnsafe?.user;
-        const userId = tgUser ? tgUser.id : 12345678; // ID de teste caso abra no navegador padrão
+        const userId = tgUser ? tgUser.id : 12345678;
 
         let flashcards = [];
         let currentIndex = 0;
         let mostrandoResposta = false;
+        let cardIdEmEdicao = null; // Guarda o ID se estiver editando
 
-        // Busca os dados dinamicamente da API Flask / Firebase
         async function carregarCardsDoFirebase() {
             try {
                 const response = await fetch(`/api/flashcards/${userId}?deck=Geral`);
@@ -169,29 +170,33 @@
                     currentIndex = 0;
                     exibirCardAtual();
                 } else {
+                    flashcards = [];
                     document.getElementById('card-status').innerText = "Vazio";
-                    document.getElementById('card-content').innerText = "Nenhum flashcard encontrado. Crie um pelo Telegram!";
-                    document.getElementById('action-buttons').classList.add('hidden');
+                    document.getElementById('card-content').innerText = "Nenhum flashcard encontrado.";
+                    ocultarBotoesAcao();
                 }
             } catch (err) {
                 console.error("Erro ao conectar com a API:", err);
                 document.getElementById('card-status').innerText = "Erro";
                 document.getElementById('card-content').innerText = "Falha ao carregar flashcards.";
+                ocultarBotoesAcao();
             }
         }
 
         function exibirCardAtual() {
             if (currentIndex >= flashcards.length) {
                 document.getElementById('card-status').innerText = "Parabéns!";
-                document.getElementById('card-content').innerText = "🎉 Você revisou todos os cards de hoje!";
-                document.getElementById('action-buttons').classList.add('hidden');
+                document.getElementById('card-content').innerText = "🎉 Você revisou todos os cards!";
+                ocultarBotoesAcao();
                 return;
             }
 
             mostrandoResposta = false;
             document.getElementById('card-status').innerText = "Pergunta";
             document.getElementById('card-content').innerText = flashcards[currentIndex].pergunta;
+            
             document.getElementById('action-buttons').classList.add('hidden');
+            document.getElementById('manage-buttons').classList.remove('hidden');
         }
 
         function virarCard() {
@@ -209,14 +214,104 @@
             }
         }
 
+        function ocultarBotoesAcao() {
+            document.getElementById('action-buttons').classList.add('hidden');
+            document.getElementById('manage-buttons').classList.add('hidden');
+        }
+
+        // --- SALVAR (CRIAR OU EDITAR) ---
+        function abrirModoCriacao() {
+            cardIdEmEdicao = null;
+            document.getElementById('form-title').innerText = "Novo Flashcard";
+            document.getElementById('input-pergunta').value = '';
+            document.getElementById('input-resposta').value = '';
+            document.getElementById('deck-view').classList.add('hidden');
+            document.getElementById('form-view').classList.remove('hidden');
+        }
+
+        function prepararEdicao() {
+            if (flashcards.length === 0 || currentIndex >= flashcards.length) return;
+
+            const cardAtual = flashcards[currentIndex];
+            cardIdEmEdicao = cardAtual.id;
+
+            document.getElementById('form-title').innerText = "Editar Flashcard";
+            document.getElementById('input-pergunta').value = cardAtual.pergunta;
+            document.getElementById('input-resposta').value = cardAtual.resposta;
+
+            document.getElementById('deck-view').classList.add('hidden');
+            document.getElementById('form-view').classList.remove('hidden');
+        }
+
+        function cancelarFormulario() {
+            document.getElementById('deck-view').classList.remove('hidden');
+            document.getElementById('form-view').classList.add('hidden');
+        }
+
+        async function salvarCard() {
+            const pergunta = document.getElementById('input-pergunta').value.trim();
+            const resposta = document.getElementById('input-resposta').value.trim();
+
+            if (!pergunta || !resposta) {
+                alert("Por favor, preencha a pergunta e a resposta!");
+                return;
+            }
+
+            const url = cardIdEmEdicao 
+                ? `/api/flashcards/${userId}/${cardIdEmEdicao}` 
+                : `/api/flashcards/${userId}`;
+            
+            const method = cardIdEmEdicao ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pergunta, resposta, deck: "Geral" })
+                });
+
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    cancelarFormulario();
+                    carregarCardsDoFirebase();
+                } else {
+                    alert("Erro ao salvar: " + result.message);
+                }
+            } catch (err) {
+                console.error("Erro na requisição:", err);
+            }
+        }
+
+        // --- EXCLUSÃO ---
+        async function deletarCardAtual() {
+            if (flashcards.length === 0 || currentIndex >= flashcards.length) return;
+            
+            const cardAtual = flashcards[currentIndex];
+            if (!confirm("Tem certeza que deseja excluir este flashcard?")) return;
+
+            try {
+                const response = await fetch(`/api/flashcards/${userId}/${cardAtual.id}?deck=Geral`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    carregarCardsDoFirebase();
+                } else {
+                    alert("Erro ao excluir: " + result.message);
+                }
+            } catch (err) {
+                console.error("Erro ao excluir card:", err);
+            }
+        }
+
+        // --- RESPOSTA DE REVISÃO ---
         async function responder(dificuldade) {
             const cardAtual = flashcards[currentIndex];
-
-            // Avança a interface localmente para resposta rápida
             currentIndex++;
             exibirCardAtual();
 
-            // Envia o feedback da revisão em segundo plano (se o card tiver um ID registrado no Firebase)
             if (cardAtual && cardAtual.id) {
                 try {
                     await fetch(`/api/flashcards/${userId}/review`, {
@@ -234,51 +329,8 @@
             }
         }
 
-        // Inicializa a aplicação carregando os dados do backend
-        function alternarModoCriacao() {
-            const deckView = document.getElementById('deck-view');
-            const createView = document.getElementById('create-view');
-
-            deckView.classList.toggle('hidden');
-            createView.classList.toggle('hidden');
-        }
-
-        async function salvarNovoCard() {
-            const pergunta = document.getElementById('input-pergunta').value.trim();
-            const resposta = document.getElementById('input-resposta').value.trim();
-
-            if (!pergunta || !resposta) {
-                alert("Por favor, preencha a pergunta e a resposta!");
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/flashcards/${userId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pergunta: pergunta,
-                        resposta: resposta,
-                        deck: "Geral"
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.status === "success") {
-                    // Limpa os campos e recarrega os cards
-                    document.getElementById('input-pergunta').value = '';
-                    document.getElementById('input-resposta').value = '';
-                    alternarModoCriacao();
-                    carregarCardsDoFirebase();
-                } else {
-                    alert("Erro ao salvar: " + result.message);
-                }
-            } catch (err) {
-                console.error("Erro na requisição:", err);
-            }
-        }
-        
+        // Inicialização
+        carregarCardsDoFirebase();
     </script>
 </body>
 

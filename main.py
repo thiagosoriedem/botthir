@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, render_template
 import requests
 from modules.ia import responder_duvida, get_status_uso
-from modules.database import salvar_flashcard, obter_flashcards_usuario, atualizar_progresso_card
+from modules.database import salvar_flashcard, obter_flashcards_usuario, atualizar_progresso_card, editar_flashcard, excluir_flashcard
 
 # Importação dos Módulos
 from modules.concursos import (
@@ -125,6 +125,27 @@ def add_user_card(user_id):
     sucesso, msg = salvar_flashcard(user_id, deck, pergunta, resposta)
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
 
+@app.route("/api/flashcards/<int:user_id>/<card_id>", methods=["PUT"])
+def update_user_card(user_id, card_id):
+    """Endpoint para editar a pergunta/resposta de um card existente."""
+    data = request.get_json() or {}
+    pergunta = data.get("pergunta")
+    resposta = data.get("resposta")
+    deck = data.get("deck", "Geral")
+
+    if not pergunta or not resposta:
+        return jsonify({"status": "error", "message": "Dados incompletos"}), 400
+
+    sucesso, msg = editar_flashcard(user_id, deck, card_id, pergunta, resposta)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+@app.route("/api/flashcards/<int:user_id>/<card_id>", methods=["DELETE"])
+def delete_user_card(user_id, card_id):
+    """Endpoint para remover um flashcard do banco."""
+    deck = request.args.get("deck", "Geral")
+    sucesso, msg = excluir_flashcard(user_id, deck, card_id)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
 @app.route("/api/flashcards/<int:user_id>/review", methods=["POST"])
 def review_user_card(user_id):
     """Endpoint chamado quando o usuário avalia a dificuldade (Errei, Bom, Fácil) no Mini App."""
@@ -136,7 +157,7 @@ def review_user_card(user_id):
     if not card_id or dificuldade is None:
         return jsonify({"status": "error", "message": "Parâmetros ausentes"}), 400
 
-    sucesso, msg = atualizar_revisao_flashcard(
+    sucesso, msg = atualizar_progresso_card(
         user_id, deck, card_id, dificuldade
     )
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
@@ -178,6 +199,44 @@ def telegram_webhook():
                     "⚠️ *Formato incorreto!*\n\n"
                     "Envie no formato:\n"
                     "`/novocard Sua pergunta aqui | Sua resposta aqui`"
+                )
+            send_telegram_message(chat_id, reply)
+
+        # EDITAR FLASHCARD: /editarcard ID | Nova Pergunta | Nova Resposta
+        elif text.startswith("/editarcard"):
+            conteudo = text.replace("/editarcard", "").strip()
+            partes = [p.strip() for p in conteudo.split("|")]
+            if len(partes) == 3:
+                card_id, nova_pergunta, nova_resposta = partes
+                sucesso, msg = editar_flashcard(
+                    user_id, "Geral", card_id, nova_pergunta, nova_resposta
+                )
+                if sucesso:
+                    reply = f"✏️ *Flashcard editado com sucesso!*"
+                else:
+                    reply = f"❌ Erro ao editar flashcard: {msg}"
+            else:
+                reply = (
+                    "⚠️ *Formato incorreto!*\n\n"
+                    "Envie no formato:\n"
+                    "`/editarcard ID_DO_CARD | Nova Pergunta | Nova Resposta`"
+                )
+            send_telegram_message(chat_id, reply)
+
+        # DELETAR FLASHCARD: /deletarcard ID
+        elif text.startswith("/deletarcard"):
+            card_id = text.replace("/deletarcard", "").strip()
+            if card_id:
+                sucesso, msg = excluir_flashcard(user_id, "Geral", card_id)
+                if sucesso:
+                    reply = "🗑️ *Flashcard removido com sucesso!*"
+                else:
+                    reply = f"❌ Erro ao excluir flashcard: {msg}"
+            else:
+                reply = (
+                    "⚠️ *Formato incorreto!*\n\n"
+                    "Envie no formato:\n"
+                    "`/deletarcard ID_DO_CARD`"
                 )
             send_telegram_message(chat_id, reply)
         # Qualquer outro texto enviado é processado como dúvida para a IA
