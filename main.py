@@ -34,18 +34,39 @@ def fetch_pci_jobs(filtro_estado=""):
 
             titulo = link_elem.text.strip()
             link = link_elem["href"]
-            vagas = (
+
+            # Captura os dados brutos das tags do PCI
+            data_limite = (
                 item.select_one(".cd").text.strip()
                 if item.select_one(".cd")
                 else "N/A"
             )
-            nivel = (
+            detalhes_raw = (
                 item.select_one(".ce").text.strip()
                 if item.select_one(".ce")
                 else "N/A"
             )
 
-            # Aplica o filtro por estado na URL ou no título
+            # Separa o nível escolar (Ex: Superior, Médio, Fundamental) do texto de vagas/salário
+            nivel = "N/A"
+            vagas_salario = detalhes_raw
+
+            for item_nivel in [
+                "Superior",
+                "Médio",
+                "Técnico",
+                "Fundamental",
+                "Alfabetizado",
+            ]:
+                if item_nivel in detalhes_raw:
+                    nivel = item_nivel
+                    # Remove a palavra do nível para não duplicar no campo de vagas
+                    vagas_salario = detalhes_raw.replace(
+                        item_nivel, ""
+                    ).strip()
+                    break
+
+            # Aplica o filtro de estado se houver
             if filtro_estado and (
                 f"/{filtro_estado.lower()}" not in link.lower()
                 and f"-{filtro_estado.lower()}" not in titulo.lower()
@@ -53,15 +74,21 @@ def fetch_pci_jobs(filtro_estado=""):
             ):
                 continue
 
-            concursos.append(
-                f"📌 *{titulo}*\n🎯 Vagas/Salário: {vagas}\n🎓 Nível: {nivel}\n🔗 {link}"
+            # Formatação limpa e organizada da mensagem
+            card_concurso = (
+                f"🏛️ *{titulo}*\n"
+                f"🎓 *Nível:* {nivel}\n"
+                f"💰 *Vagas / Cargo:* {vagas_salario}\n"
+                f"⏳ *Inscrições até:* {data_limite}\n"
+                f"🔗 [Acessar Edital/Notícia]({link})"
             )
+
+            concursos.append(card_concurso)
 
         return concursos[:10]
     except Exception as e:
         print(f"Erro no scraping: {e}")
         return []
-
 
 # --- FUNÇÕES TELEGRAM ---
 def send_telegram_message(target_chat_id, text, reply_markup=None):
