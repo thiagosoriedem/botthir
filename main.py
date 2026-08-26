@@ -26,16 +26,30 @@ def fetch_pci_jobs(filtro_estado=""):
 
         soup = BeautifulSoup(response.content, "html.parser")
         concursos = []
+        sigla_alvo = filtro_estado.upper().strip() if filtro_estado else ""
 
         for item in soup.select(".ca"):
             link_elem = item.select_one("a")
             if not link_elem:
                 continue
 
+            # Extrai a sigla do estado diretamente da div class="cc"
+            cc_elem = item.select_one(".cc")
+            estado_sigla = cc_elem.text.strip().upper() if cc_elem else ""
+
+            # FILTRAGEM PELA DIV CLASS "CC"
+            if (
+                sigla_alvo
+                and sigla_alvo != "ALL"
+                and estado_sigla != sigla_alvo
+            ):
+                continue
+
             titulo = link_elem.text.strip()
             link = link_elem["href"]
+            if link.startswith("/"):
+                link = f"https://www.pciconcursos.com.br{link}"
 
-            # Extração dos blocos de dados
             cd_text = (
                 item.select_one(".cd").text.strip()
                 if item.select_one(".cd")
@@ -47,7 +61,7 @@ def fetch_pci_jobs(filtro_estado=""):
                 else ""
             )
 
-            # Identifica qual das tags contém a data (Formato XX/XX/XXXX)
+            # Identifica a data limite no formato XX/XX/XXXX
             data_limite = "N/A"
             vagas_detalhes = ""
 
@@ -60,7 +74,7 @@ def fetch_pci_jobs(filtro_estado=""):
             else:
                 vagas_detalhes = f"{cd_text} {ce_text}".strip()
 
-            # Extrai e limpa o nível de escolaridade do texto de vagas
+            # Extrai o Nível de Escolaridade
             nivel = "N/A"
             niveis_possiveis = [
                 "Superior",
@@ -71,25 +85,16 @@ def fetch_pci_jobs(filtro_estado=""):
             ]
 
             for n in niveis_possiveis:
-                if n in vagas_detalhes:
+                if n.lower() in vagas_detalhes.lower():
                     nivel = n
-                    # Remove repetições do nível no texto de vagas
                     vagas_detalhes = re.sub(
                         rf"\b{n}\b", "", vagas_detalhes, flags=re.IGNORECASE
                     ).strip()
                     break
 
-            # Aplica filtro de estado se necessário
-            if filtro_estado and (
-                f"/{filtro_estado.lower()}" not in link.lower()
-                and f"-{filtro_estado.lower()}" not in titulo.lower()
-                and f" {filtro_estado.upper()}" not in titulo.upper()
-            ):
-                continue
-
-            # Montagem da mensagem formatada em Markdown
+            # Montagem do card formatado
             card = (
-                f"🏛️ *{titulo}*\n"
+                f"🏛️ *{titulo}* [{estado_sigla}]\n"
                 f"🎓 *Nível:* {nivel}\n"
                 f"💰 *Vagas / Cargo:* {vagas_detalhes}\n"
                 f"⏳ *Inscrições até:* {data_limite}\n"
@@ -99,6 +104,7 @@ def fetch_pci_jobs(filtro_estado=""):
             concursos.append(card)
 
         return concursos[:10]
+
     except Exception as e:
         print(f"Erro no scraping: {e}")
         return []
