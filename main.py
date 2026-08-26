@@ -3,7 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 import requests
-from modules.ia import responder_duvida
+from modules.ia import responder_duvida, get_status_uso
 
 # Importação dos Módulos
 from modules.concursos import (
@@ -151,10 +151,15 @@ def telegram_webhook():
 
         #MODULO IA
         elif data_code == "menu_ia":
+            status_limite = get_status_uso()
+            msg = (
+                "🤖 *Módulo de Inteligência Artificial*\n\n"
+                "Envie qualquer mensagem de texto diretamente no chat para tirar suas dúvidas!\n\n"
+                f"{status_limite}"
+            )
             send_telegram_message(
                 chat_id,
-                "🤖 *Módulo de Inteligência Artificial*\n\n"
-                "Pode me enviar qualquer dúvida, pergunta de estudo ou texto diretamente aqui no chat que eu te respondo!",
+                msg,
                 reply_markup={"inline_keyboard": [[{"text": "🏠 Voltar", "callback_data": "main_menu"}]]},
             )
 
