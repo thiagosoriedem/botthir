@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, render_template
 import requests
 from modules.ia import responder_duvida, get_status_uso
-from modules.database import salvar_flashcard, obter_flashcards_usuario
+from modules.database import salvar_flashcard, obter_flashcards_usuario, atualizar_revisao_flashcard
 
 # Importação dos Módulos
 from modules.concursos import (
@@ -125,6 +125,22 @@ def add_user_card(user_id):
     sucesso, msg = salvar_flashcard(user_id, deck, pergunta, resposta)
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
 
+@app.route("/api/flashcards/<int:user_id>/review", methods=["POST"])
+def review_user_card(user_id):
+    """Endpoint chamado quando o usuário avalia a dificuldade (Errei, Bom, Fácil) no Mini App."""
+    data = request.get_json() or {}
+    card_id = data.get("card_id")
+    dificuldade = data.get("dificuldade")  # 1 (Errei), 3 (Bom), 5 (Fácil)
+    deck = data.get("deck", "Geral")
+
+    if not card_id or dificuldade is None:
+        return jsonify({"status": "error", "message": "Parâmetros ausentes"}), 400
+
+    sucesso, msg = atualizar_revisao_flashcard(
+        user_id, deck, card_id, dificuldade
+    )
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def telegram_webhook():
     data = request.get_json()
@@ -135,6 +151,7 @@ def telegram_webhook():
     if "message" in data:
         message = data["message"]
         chat_id = message["chat"]["id"]
+        user_id = message["from"]["id"]
         text = message.get("text", "").strip()
 
         if text in ["/start", "/menu"]:
@@ -145,7 +162,24 @@ def telegram_webhook():
             send_telegram_message(
                 chat_id, msg_texto, reply_markup=get_main_menu_keyboard()
             )
-        
+
+        # COMANDO PARA CRIAR FLASHCARD DIRETO DO TELEGRAM: /novocard Pergunta | Resposta
+        elif text.startswith("/novocard"):
+            conteudo = text.replace("/novocard", "").strip()
+            if "|" in conteudo:
+                pergunta, resposta = [item.strip() for item in conteudo.split("|", 1)]
+                sucesso, msg = salvar_flashcard(user_id, "Geral", pergunta, resposta)
+                if sucesso:
+                    reply = f"✅ *Flashcard salvo com sucesso!*\n\n❓ *P:* {pergunta}\n💡 *R:* {resposta}"
+                else:
+                    reply = f"❌ Erro ao salvar flashcard: {msg}"
+            else:
+                reply = (
+                    "⚠️ *Formato incorreto!*\n\n"
+                    "Envie no formato:\n"
+                    "`/novocard Sua pergunta aqui | Sua resposta aqui`"
+                )
+            send_telegram_message(chat_id, reply)
         # Qualquer outro texto enviado é processado como dúvida para a IA
         elif text:
             send_telegram_message(chat_id, "🧠 *Pensando...*")
