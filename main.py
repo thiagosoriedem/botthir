@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, render_template
 import requests
 from modules.ia import responder_duvida, get_status_uso
-from modules.database import salvar_flashcard, obter_flashcards_usuario, atualizar_revisao_flashcard
+from modules.database import salvar_flashcard, obter_flashcards_usuario, atualizar_progresso_card
 
 # Importação dos Módulos
 from modules.concursos import (
