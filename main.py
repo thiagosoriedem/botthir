@@ -114,7 +114,7 @@ def enviar_menu_jogos(chat_id):
                     {
                         "text": "⚡ Jogo da Memória",
                         "web_app": {
-                            "url": "https://botthir.onrender.com/tamplates/game.html"
+                            "url": "https://botthir.onrender.com/templates/game.html"
                         },
                     }
                 ],
