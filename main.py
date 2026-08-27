@@ -165,7 +165,7 @@ def home():
     return "Servidor Agente Pessoal Ativo!", 200
 
 @app.route("/game.html")
-def servir_jogo2():
+def servir_jogo():
     with open("game.html", "r", encoding="utf-8") as f:
         conteudo = f.read()
     return render_template_string(conteudo)
