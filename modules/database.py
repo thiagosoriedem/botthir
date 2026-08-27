@@ -39,7 +39,7 @@ def salvar_flashcard(user_id, deck_name, pergunta, resposta):
             "resposta": resposta,
             "intervalo": 1,  # Intervalo inicial de repetição (em dias)
             "repeticoes": 0,
-            "facilidade": 2.5,  # Factor de facilidade inicial do algoritmo SM-2
+            "facilidade": 2.5,  # Fator de facilidade inicial do algoritmo SM-2
             "proxima_revisao": datetime.now().strftime("%Y-%m-%d"),
             "criado_em": datetime.now(),
         }
@@ -76,6 +76,56 @@ def obter_flashcards_usuario(user_id, deck_name="Geral"):
     except Exception as e:
         print(f"Erro ao buscar cards no Firebase: {e}")
         return []
+
+
+def editar_flashcard(user_id, deck_name, card_id, nova_pergunta, nova_resposta):
+    """Atualiza o conteúdo de pergunta e resposta de um flashcard existente."""
+    if not db:
+        return False, "Database offline"
+
+    try:
+        doc_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("decks")
+            .document(deck_name)
+            .collection("cards")
+            .document(card_id)
+        )
+
+        doc_ref.update(
+            {
+                "pergunta": nova_pergunta,
+                "resposta": nova_resposta,
+                "atualizado_em": datetime.now(),
+            }
+        )
+        return True, "Flashcard atualizado com sucesso!"
+    except Exception as e:
+        print(f"Erro ao editar card no Firebase: {e}")
+        return False, str(e)
+
+
+def excluir_flashcard(user_id, deck_name, card_id):
+    """Remove um flashcard do banco de dados pelo seu ID."""
+    if not db:
+        return False, "Database offline"
+
+    try:
+        doc_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("decks")
+            .document(deck_name)
+            .collection("cards")
+            .document(card_id)
+        )
+
+        doc_ref.delete()
+        return True, "Flashcard excluído com sucesso!"
+    except Exception as e:
+        print(f"Erro ao excluir card no Firebase: {e}")
+        return False, str(e)
 
 
 def atualizar_progresso_card(
