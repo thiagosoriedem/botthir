@@ -65,6 +65,42 @@ def get_main_menu_keyboard():
     }
 
 
+def setup_bot_commands():
+    """Configura o menu pop-up de comandos no Telegram."""
+    if not TELEGRAM_TOKEN:
+        return
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/setMyCommands"
+    commands = [
+        {"command": "start", "description": "Exibe o menu principal do Agente"},
+        {"command": "menu", "description": "Abre o painel interativo"},
+        {
+            "command": "novocard",
+            "description": "Cria card. Ex: /novocard Pergunta | Resposta",
+        },
+        {
+            "command": "editarcard",
+            "description": "Edita card. Ex: /editarcard ID | Pergunta | Resposta",
+        },
+        {
+            "command": "deletarcard",
+            "description": "Remove card. Ex: /deletarcard ID",
+        },
+    ]
+
+    try:
+        response = requests.post(url, json={"commands": commands}, timeout=10)
+        if response.status_code == 200:
+            print("🤖 Comandos do Telegram registrados com sucesso!")
+        else:
+            print(f"⚠️ Falha ao registrar comandos: {response.text}")
+    except Exception as e:
+        print(f"Erro ao conectar com API do Telegram: {e}")
+
+
+# Executa o registro de comandos na inicialização
+setup_bot_commands()
+
 # --- AGENDADOR DIÁRIO ---
 def scheduled_job():
     print("⏰ Executando disparo agendado de concursos...")
