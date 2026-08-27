@@ -1,7 +1,7 @@
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, render_template_string, request, render_template
 import requests
 from modules.ia import responder_duvida, get_status_uso
 from modules.database import salvar_flashcard, obter_flashcards_usuario, atualizar_progresso_card, editar_flashcard, excluir_flashcard
@@ -101,6 +101,37 @@ def setup_bot_commands():
 # Executa o registro de comandos na inicialização
 setup_bot_commands()
 
+def enviar_menu_jogos(chat_id):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+
+    payload = {
+        "chat_id": chat_id,
+        "text": "🎮 **Central de Mini-Games**\nEscolha o modo de treino desejado:",
+        "parse_mode": "Markdown",
+        "reply_markup": {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "⚡ Jogo da Memória",
+                        "web_app": {
+                            "url": "https://botthir.onrender.com/tamplates/game.html"
+                        },
+                    }
+                ],
+                [
+                    {
+                        "text": "⚡ Jogo Teste",
+                        "web_app": {
+                            "url": "https://seu-dominio.onrender.com/game2.html"
+                        },
+                    }
+                ],
+            ]
+        },
+    }
+
+    requests.post(url, json=payload)
+
 # --- AGENDADOR DIÁRIO ---
 def scheduled_job():
     print("⏰ Executando disparo agendado de concursos...")
@@ -132,6 +163,12 @@ scheduler.start()
 @app.route("/")
 def home():
     return "Servidor Agente Pessoal Ativo!", 200
+
+@app.route("/game.html")
+def servir_jogo2():
+    with open("game.html", "r", encoding="utf-8") as f:
+        conteudo = f.read()
+    return render_template_string(conteudo)
 
 # Rota que entrega a página HTML do Mini App Flashcards
 @app.route("/flashcards")

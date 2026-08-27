@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Memory Flashcards</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 90vh;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .score-board {
+      display: flex;
+      gap: 20px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 360px;
+    }
+    .card {
+      height: 90px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+    .card.selected {
+      border-color: #38bdf8;
+      background: #0284c7;
+    }
+    .card.matched {
+      border-color: #22c55e;
+      background: #15803d;
+      opacity: 0.6;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h2 style="margin:0 0 8px 0;">⚡ Associação Rápida</h2>
+    <div class="score-board">
+      <span id="timer">Tempo: 30s</span>
+      <span id="pairs">Pares: 0/3</span>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // Cards do banco (Perguntas e Respostas correspondentes)
+    const cardPairs = [
+      { id: 1, text: "🐍 Python", type: "Q" },
+      { id: 1, text: "Linguagem interpretada", type: "A" },
+      { id: 2, text: "🌐 HTML", type: "Q" },
+      { id: 2, text: "Linguagem de marcação", type: "A" },
+      { id: 3, text: "⚡ Firebase", type: "Q" },
+      { id: 3, text: "Banco de dados NoSQL", type: "A" }
+    ];
+
+    let selectedCards = [];
+    let matchedPairs = 0;
+    let timeLeft = 30;
+    let timerInterval;
+
+    // Embaralha as cartas
+    const shuffled = cardPairs.sort(() => Math.random() - 0.5);
+
+    function renderGrid() {
+      const grid = document.getElementById("grid");
+      grid.innerHTML = "";
+      shuffled.forEach((card, index) => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerText = card.text;
+        div.onclick = () => selectCard(div, card, index);
+        grid.appendChild(div);
+      });
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = `Tempo: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          alert("⏰ Tempo esgotado! Tente novamente.");
+          location.reload();
+        }
+      }, 1000);
+    }
+
+    function selectCard(element, card, index) {
+      if (element.classList.contains("matched") || element.classList.contains("selected")) return;
+      if (selectedCards.length === 2) return;
+
+      element.classList.add("selected");
+      selectedCards.push({ element, card, index });
+
+      if (selectedCards.length === 2) {
+        const [first, second] = selectedCards;
+
+        // Verifica se é o mesmo par de ID (Pergunta correspondendo à Resposta)
+        if (first.card.id === second.card.id && first.index !== second.index) {
+          setTimeout(() => {
+            first.element.className = "card matched";
+            second.element.className = "card matched";
+            matchedPairs++;
+            document.getElementById("pairs").innerText = `Pares: ${matchedPairs}/3`;
+            selectedCards = [];
+
+            if (matchedPairs === 3) {
+              clearInterval(timerInterval);
+              document.getElementById("timer").innerText = "🎉 Vitória!";
+            }
+          }, 300);
+        } else {
+          setTimeout(() => {
+            first.element.classList.remove("selected");
+            second.element.classList.remove("selected");
+            selectedCards = [];
+          }, 700);
+        }
+      }
+    }
+
+    renderGrid();
+    startTimer();
+  </script>
+</body>
+</html>
