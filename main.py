@@ -168,7 +168,7 @@ def home():
 def servir_jogo():
     with open("game.html", "r", encoding="utf-8") as f:
         conteudo = f.read()
-    return render_template_string(conteudo)
+    return render_template(conteudo)
 
 # Rota que entrega a página HTML do Mini App Flashcards
 @app.route("/flashcards")
