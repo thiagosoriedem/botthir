@@ -354,6 +354,7 @@ def telegram_webhook():
         callback = data["callback_query"]
         callback_id = callback["id"]
         chat_id = callback["message"]["chat"]["id"]
+        user_id = callback["from"]["id"]
         message_id = callback["message"]["message_id"]
         data_code = callback.get("data", "")
 
