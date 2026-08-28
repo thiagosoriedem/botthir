@@ -64,6 +64,19 @@ def get_main_menu_keyboard():
         ]
     }
 
+def editar_mensagem_telegram(chat_id, message_id, texto, reply_markup=None):
+    """Edita o texto e o teclado de uma mensagem existente."""
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/editMessageText"
+    payload = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "text": texto,
+        "parse_mode": "Markdown"
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+        
+    requests.post(url, json=payload)
 
 def setup_bot_commands():
     """Configura o menu pop-up de comandos no Telegram."""
@@ -326,22 +339,25 @@ def telegram_webhook():
         callback = data["callback_query"]
         callback_id = callback["id"]
         chat_id = callback["message"]["chat"]["id"]
+        message_id = callback["message"]["message_id"]
         data_code = callback.get("data", "")
 
         answer_callback_query(callback_id)
 
         # NAVEGAÇÃO DO MENU PRINCIPAL
         if data_code == "main_menu":
-            send_telegram_message(
+            editar_mensagem_telegram(
                 chat_id,
+                message_id,
                 "🤖 *Painel Principal do Agente Pessoal:*",
                 reply_markup=get_main_menu_keyboard(),
             )
 
         # MÓDULO: CONCURSOS
         elif data_code == "menu_concursos":
-            send_telegram_message(
+            editar_mensagem_telegram(
                 chat_id,
+                message_id,
                 "🏛️ *Módulo de Concursos PCI*\n\nEscolha o estado desejado:",
                 reply_markup=get_concursos_state_keyboard(),
             )
@@ -354,8 +370,9 @@ def telegram_webhook():
                 "Envie qualquer mensagem de texto diretamente no chat para tirar suas dúvidas!\n\n"
                 f"{status_limite}"
             )
-            send_telegram_message(
+            editar_mensagem_telegram(
                 chat_id,
+                message_id,
                 msg,
                 reply_markup={"inline_keyboard": [[{"text": "🏠 Voltar", "callback_data": "main_menu"}]]},
             )
@@ -372,8 +389,9 @@ def telegram_webhook():
             total_items = len(all_jobs)
 
             if not all_jobs:
-                send_telegram_message(
+                editar_mensagem_telegram(
                     chat_id,
+                    message_id,
                     f"Nenhum concurso encontrado para *{label_estado}*.",
                     reply_markup=get_concursos_state_keyboard(),
                 )
@@ -388,26 +406,29 @@ def telegram_webhook():
                     reply_markup = get_concursos_pagination_keyboard(
                         sigla, next_offset, total_items
                     )
-                    send_telegram_message(chat_id, msg, reply_markup=reply_markup)
+                    editar_mensagem_telegram(chat_id, message_id, msg, reply_markup=reply_markup)
 
         # MÓDULOS FUTUROS (STUBS)
         elif data_code == "menu_lembretes":
-            send_telegram_message(
+            editar_mensagem_telegram(
                 chat_id,
+                message_id,
                 "📝 *Módulo de Lembretes*\n\nEm breve você poderá gerenciar suas tarefas aqui!",
                 reply_markup={"inline_keyboard": [[{"text": "🏠 Voltar", "callback_data": "main_menu"}]]},
             )
 
         elif data_code == "menu_financas":
-            send_telegram_message(
+            editar_mensagem_telegram(
                 chat_id,
+                message_id,
                 "💸 *Módulo de Finanças*\n\nEm breve você poderá registrar seus gastos rápidos aqui!",
                 reply_markup={"inline_keyboard": [[{"text": "🏠 Voltar", "callback_data": "main_menu"}]]},
             )
 
         elif data_code == "menu_ia":
-            send_telegram_message(
+            editar_mensagem_telegram(
                 chat_id,
+                message_id,
                 "🤖 *Módulo de Inteligência Artificial*\n\nEm breve integrado com o Gemini!",
                 reply_markup={"inline_keyboard": [[{"text": "🏠 Voltar", "callback_data": "main_menu"}]]},
             )
