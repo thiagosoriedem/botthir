@@ -66,7 +66,7 @@ def get_main_menu_keyboard():
 
 def editar_mensagem_telegram(chat_id, message_id, texto, reply_markup=None):
     """Edita o texto e o teclado de uma mensagem existente."""
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/editMessageText"
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/editMessageText"
     payload = {
         "chat_id": chat_id,
         "message_id": message_id,
