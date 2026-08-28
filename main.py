@@ -327,14 +327,6 @@ def telegram_webhook():
                     "`/deletarcard ID_DO_CARD`"
                 )
             send_telegram_message(chat_id, reply)
-        # Qualquer outro texto enviado é processado como dúvida para a IA
-        elif text:
-            send_telegram_message(chat_id, "🧠 *Pensando...*")
-            resposta_ia = responder_duvida(text)
-            
-            # Teclado para voltar ao menu
-            keyboard = {"inline_keyboard": [[{"text": "🏠 Menu Principal", "callback_data": "main_menu"}]]}
-            send_telegram_message(chat_id, resposta_ia, reply_markup=keyboard)
 
         # ADICIONAR NOVA TAREFA: /novatarefa [Título da Tarefa]
         elif text.startswith("/novatarefa"):
@@ -348,6 +340,14 @@ def telegram_webhook():
                 else:
                     reply = "⚠️ Informe o título da tarefa. Exemplo:\n`/novatarefa Comprar material de estudo`"
                 send_telegram_message(chat_id, reply)
+        # Qualquer outro texto enviado é processado como dúvida para a IA
+        elif text:
+            send_telegram_message(chat_id, "🧠 *Pensando...*")
+            resposta_ia = responder_duvida(text)
+            
+            # Teclado para voltar ao menu
+            keyboard = {"inline_keyboard": [[{"text": "🏠 Menu Principal", "callback_data": "main_menu"}]]}
+            send_telegram_message(chat_id, resposta_ia, reply_markup=keyboard)
 
     # 2. Trata Cliques em Botões Inline
     elif "callback_query" in data:
