@@ -157,3 +157,60 @@ def atualizar_progresso_card(
     except Exception as e:
         print(f"Erro ao atualizar progresso do card: {e}")
         return False
+
+def salvar_tarefa(user_id, titulo, data_vencimento=""):
+    """Salva uma nova tarefa para o usuário."""
+    if not db:
+        return False, "Database offline"
+    try:
+        doc_ref = db.collection("users").document(str(user_id)).collection("tasks").document()
+        task_data = {
+            "titulo": titulo,
+            "vencimento": data_vencimento,
+            "concluida": False,
+            "criado_em": datetime.now()
+        }
+        doc_ref.set(task_data)
+        return True, "Tarefa salva com sucesso!"
+    except Exception as e:
+        return False, str(e)
+
+def obter_tarefas_usuario(user_id):
+    """Retorna todas as tarefas de um usuário."""
+    if not db:
+        return []
+    try:
+        tasks_ref = db.collection("users").document(str(user_id)).collection("tasks").stream()
+        tasks = []
+        for doc in tasks_ref:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            tasks.append(data)
+        return tasks
+    except Exception as e:
+        return []
+
+def alternar_status_tarefa(user_id, task_id):
+    """Alterna o status de concluída/pendente de uma tarefa."""
+    if not db:
+        return False
+    try:
+        doc_ref = db.collection("users").document(str(user_id)).collection("tasks").document(task_id)
+        doc = doc_ref.get()
+        if doc.exists:
+            status_atual = doc.to_dict().get("concluida", False)
+            doc_ref.update({"concluida": not status_atual})
+            return True
+        return False
+    except Exception as e:
+        return False
+
+def excluir_tarefa(user_id, task_id):
+    """Exclui uma tarefa do banco."""
+    if not db:
+        return False
+    try:
+        db.collection("users").document(str(user_id)).collection("tasks").document(task_id).delete()
+        return True
+    except Exception as e:
+        return False

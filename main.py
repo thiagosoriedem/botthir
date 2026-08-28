@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template_string, request, render_template
 import requests
 from modules.ia import responder_duvida, get_status_uso
-from modules.database import salvar_flashcard, obter_flashcards_usuario, atualizar_progresso_card, editar_flashcard, excluir_flashcard
+from modules.database import salvar_flashcard, obter_flashcards_usuario, atualizar_progresso_card, editar_flashcard, excluir_flashcard, salvar_tarefa, obter_tarefas_usuario, alternar_status_tarefa, excluir_tarefa
+from modules.lembretes import get_tasks_keyboard
+
 
 # Importação dos Módulos
 from modules.concursos import (
@@ -334,6 +336,19 @@ def telegram_webhook():
             keyboard = {"inline_keyboard": [[{"text": "🏠 Menu Principal", "callback_data": "main_menu"}]]}
             send_telegram_message(chat_id, resposta_ia, reply_markup=keyboard)
 
+        # ADICIONAR NOVA TAREFA: /novatarefa [Título da Tarefa]
+        elif text.startswith("/novatarefa"):
+                titulo_tarefa = text.replace("/novatarefa", "").strip()
+                if titulo_tarefa:
+                    sucesso, msg_resp = salvar_tarefa(user_id, titulo_tarefa)
+                    if sucesso:
+                        reply = f"✅ Tarefa *'{titulo_tarefa}'* salva com sucesso!"
+                    else:
+                        reply = f"❌ Erro ao salvar tarefa: {msg_resp}"
+                else:
+                    reply = "⚠️ Informe o título da tarefa. Exemplo:\n`/novatarefa Comprar material de estudo`"
+                send_telegram_message(chat_id, reply)
+
     # 2. Trata Cliques em Botões Inline
     elif "callback_query" in data:
         callback = data["callback_query"]
@@ -408,14 +423,32 @@ def telegram_webhook():
                     )
                     editar_mensagem_telegram(chat_id, message_id, msg, reply_markup=reply_markup)
 
-        # MÓDULOS FUTUROS (STUBS)
+        # MÓDULO: LEMBRETES & TAREFAS
         elif data_code == "menu_lembretes":
-            editar_mensagem_telegram(
-                chat_id,
-                message_id,
-                "📝 *Módulo de Lembretes*\n\nEm breve você poderá gerenciar suas tarefas aqui!",
-                reply_markup={"inline_keyboard": [[{"text": "🏠 Voltar", "callback_data": "main_menu"}]]},
-            )
+            tasks = obter_tarefas_usuario(user_id)
+            msg = "📝 *Módulo de Lembretes & Tarefas*\n\nSuas tarefas cadastradas:"
+            editar_mensagem_telegram(chat_id, message_id, msg, reply_markup=get_tasks_keyboard(tasks))
+
+        elif data_code.startswith("task_toggle_"):
+            task_id = data_code.replace("task_toggle_", "")
+            alternar_status_tarefa(user_id, task_id)
+            
+            # Atualiza a lista na mesma mensagem
+            tasks = obter_tarefas_usuario(user_id)
+            editar_mensagem_telegram(chat_id, message_id, "📝 *Módulo de Lembretes & Tarefas*\n\nSuas tarefas cadastradas:", reply_markup=get_tasks_keyboard(tasks))
+
+        elif data_code.startswith("task_del_"):
+            task_id = data_code.replace("task_del_", "")
+            excluir_tarefa(user_id, task_id)
+            
+            # Atualiza a lista na mesma mensagem
+            tasks = obter_tarefas_usuario(user_id)
+            editar_mensagem_telegram(chat_id, message_id, "📝 *Módulo de Lembretes & Tarefas*\n\nSuas tarefas cadastradas:", reply_markup=get_tasks_keyboard(tasks))
+
+        elif data_code == "task_new_prompt":
+            msg = "✍️ Para adicionar uma nova tarefa, envie no chat:\n\n`/novatarefa [Título da Tarefa]`"
+            keyboard = {"inline_keyboard": [[{"text": "⬅️ Voltar aos Lembretes", "callback_data": "menu_lembretes"}]]}
+            editar_mensagem_telegram(chat_id, message_id, msg, reply_markup=keyboard)
 
         elif data_code == "menu_financas":
             editar_mensagem_telegram(
