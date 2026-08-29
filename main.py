@@ -6,6 +6,17 @@ import requests
 from modules.ia import responder_duvida, get_status_uso
 from modules.database import salvar_flashcard, obter_flashcards_usuario, atualizar_progresso_card, editar_flashcard, excluir_flashcard, salvar_tarefa, obter_tarefas_usuario, alternar_status_tarefa, excluir_tarefa
 from modules.lembretes import get_tasks_keyboard
+from modules.financas import (
+    salvar_transacao,
+    obter_transacoes_usuario,
+    excluir_transacao,
+    obter_resumo_financeiro,
+    obter_despesas_por_categoria,
+    salvar_meta_financeira,
+    obter_metas_financeiras,
+    atualizar_progresso_meta,
+    excluir_meta_financeira,
+)
 
 
 # Importação dos Módulos
@@ -101,6 +112,18 @@ def setup_bot_commands():
             "command": "deletarcard",
             "description": "Remove card. Ex: /deletarcard ID",
         },
+        {
+            "command": "gasto",
+            "description": "Registra despesa. Ex: /gasto 50,00 Mercado",
+        },
+        {
+            "command": "receita",
+            "description": "Registra receita. Ex: /receita 2500,00 Salário",
+        },
+        {
+            "command": "resumo",
+            "description": "Mostra resumo financeiro do mês",
+        },
     ]
 
     try:
@@ -190,6 +213,11 @@ def servir_jogo():
 def flashcards_app():
     return render_template("flashcards.html")
 
+# Rota que entrega a página HTML do Mini App de Finanças
+@app.route("/financas")
+def financas_app():
+    return render_template("financas.html")
+
 
 # API GET: Lista todos os cards do usuário
 @app.route("/api/flashcards/<int:user_id>", methods=["GET"])
@@ -248,6 +276,95 @@ def review_user_card(user_id):
     sucesso, msg = atualizar_progresso_card(
         user_id, deck, card_id, dificuldade
     )
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# ===== API DE FINANÇAS =====
+
+# API GET: Lista transações do usuário (com filtro opcional por mês/ano)
+@app.route("/api/financas/<int:user_id>", methods=["GET"])
+def get_user_transacoes(user_id):
+    mes = request.args.get("mes")
+    ano = request.args.get("ano")
+    transacoes = obter_transacoes_usuario(user_id, mes, ano)
+    return jsonify({"status": "success", "transacoes": transacoes})
+
+# API POST: Salva uma nova transação
+@app.route("/api/financas/<int:user_id>", methods=["POST"])
+def add_user_transacao(user_id):
+    data = request.get_json() or {}
+    tipo = data.get("tipo")
+    descricao = data.get("descricao")
+    valor = data.get("valor")
+    categoria = data.get("categoria", "Geral")
+    data_transacao = data.get("data")
+
+    if not tipo or not descricao or not valor:
+        return jsonify({"status": "error", "message": "Dados incompletos"}), 400
+
+    if tipo not in ["receita", "despesa"]:
+        return jsonify({"status": "error", "message": "Tipo inválido"}), 400
+
+    sucesso, msg = salvar_transacao(user_id, tipo, descricao, valor, categoria, data_transacao)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API GET: Resumo financeiro do mês
+@app.route("/api/financas/<int:user_id>/resumo", methods=["GET"])
+def get_user_resumo_financeiro(user_id):
+    mes = request.args.get("mes")
+    ano = request.args.get("ano")
+    resumo = obter_resumo_financeiro(user_id, mes, ano)
+    return jsonify({"status": "success", **resumo})
+
+# API GET: Despesas por categoria
+@app.route("/api/financas/<int:user_id>/categorias", methods=["GET"])
+def get_user_despesas_categorias(user_id):
+    mes = request.args.get("mes")
+    ano = request.args.get("ano")
+    categorias = obter_despesas_por_categoria(user_id, mes, ano)
+    return jsonify({"status": "success", **categorias})
+
+# API GET: Lista metas financeiras
+@app.route("/api/financas/<int:user_id>/metas", methods=["GET"])
+def get_user_metas(user_id):
+    metas = obter_metas_financeiras(user_id)
+    return jsonify({"status": "success", "metas": metas})
+
+# API POST: Salva uma nova meta financeira
+@app.route("/api/financas/<int:user_id>/metas", methods=["POST"])
+def add_user_meta(user_id):
+    data = request.get_json() or {}
+    titulo = data.get("titulo")
+    valor_meta = data.get("valor_meta")
+    valor_atual = data.get("valor_atual", 0)
+
+    if not titulo or not valor_meta:
+        return jsonify({"status": "error", "message": "Dados incompletos"}), 400
+
+    sucesso, msg = salvar_meta_financeira(user_id, titulo, valor_meta, valor_atual)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API PUT: Atualiza progresso de uma meta
+@app.route("/api/financas/<int:user_id>/metas/<meta_id>", methods=["PUT"])
+def update_user_meta(user_id, meta_id):
+    data = request.get_json() or {}
+    valor_atual = data.get("valor_atual")
+
+    if valor_atual is None:
+        return jsonify({"status": "error", "message": "Valor atual ausente"}), 400
+
+    sucesso, msg = atualizar_progresso_meta(user_id, meta_id, valor_atual)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API DELETE: Exclui uma meta financeira
+@app.route("/api/financas/<int:user_id>/metas/<meta_id>", methods=["DELETE"])
+def delete_user_meta(user_id, meta_id):
+    sucesso, msg = excluir_meta_financeira(user_id, meta_id)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API DELETE: Exclui uma transação
+@app.route("/api/financas/<int:user_id>/<transacao_id>", methods=["DELETE"])
+def delete_user_transacao(user_id, transacao_id):
+    sucesso, msg = excluir_transacao(user_id, transacao_id)
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
 
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
@@ -340,6 +457,62 @@ def telegram_webhook():
                 else:
                     reply = "⚠️ Informe o título da tarefa. Exemplo:\n`/novatarefa Comprar material de estudo`"
                 send_telegram_message(chat_id, reply)
+
+        # REGISTRAR DESPESA: /gasto 50,00 Mercado
+        elif text.startswith("/gasto"):
+            conteudo = text.replace("/gasto", "").strip()
+            partes = conteudo.split(" ", 1)
+            if len(partes) == 2:
+                valor_str = partes[0].replace(",", ".")
+                descricao = partes[1].strip()
+                try:
+                    valor = float(valor_str)
+                    sucesso, msg = salvar_transacao(user_id, "despesa", descricao, valor, "Outros")
+                    if sucesso:
+                        reply = f"✅ *Despesa registrada!*\n\n💸 *Valor:* R$ {valor:.2f}\n📝 *Descrição:* {descricao}"
+                    else:
+                        reply = f"❌ Erro ao registrar despesa: {msg}"
+                except ValueError:
+                    reply = "⚠️ Valor inválido! Use o formato:\n`/gasto 50,00 Mercado`"
+            else:
+                reply = "⚠️ Formato incorreto! Use:\n`/gasto 50,00 Mercado`"
+            send_telegram_message(chat_id, reply)
+
+        # REGISTRAR RECEITA: /receita 2500,00 Salário
+        elif text.startswith("/receita"):
+            conteudo = text.replace("/receita", "").strip()
+            partes = conteudo.split(" ", 1)
+            if len(partes) == 2:
+                valor_str = partes[0].replace(",", ".")
+                descricao = partes[1].strip()
+                try:
+                    valor = float(valor_str)
+                    sucesso, msg = salvar_transacao(user_id, "receita", descricao, valor, "Salário")
+                    if sucesso:
+                        reply = f"✅ *Receita registrada!*\n\n💰 *Valor:* R$ {valor:.2f}\n📝 *Descrição:* {descricao}"
+                    else:
+                        reply = f"❌ Erro ao registrar receita: {msg}"
+                except ValueError:
+                    reply = "⚠️ Valor inválido! Use o formato:\n`/receita 2500,00 Salário`"
+            else:
+                reply = "⚠️ Formato incorreto! Use:\n`/receita 2500,00 Salário`"
+            send_telegram_message(chat_id, reply)
+
+        # VER RESUMO FINANCEIRO: /resumo
+        elif text.startswith("/resumo"):
+            resumo = obter_resumo_financeiro(user_id)
+            saldo = resumo["saldo"]
+            emoji_saldo = "🟢" if saldo >= 0 else "🔴"
+            reply = (
+                "💸 *Resumo Financeiro do Mês*\n\n"
+                f"💰 *Receitas:* R$ {resumo['total_receitas']:.2f}\n"
+                f"💸 *Despesas:* R$ {resumo['total_despesas']:.2f}\n"
+                f"{emoji_saldo} *Saldo:* R$ {saldo:.2f}\n\n"
+                f"📊 *Total de transações:* {resumo['quantidade_transacoes']}"
+            )
+            keyboard = {"inline_keyboard": [[{"text": "💸 Abrir App de Finanças", "web_app": {"url": f"{APP_URL}/financas"}}]]}
+            send_telegram_message(chat_id, reply, reply_markup=keyboard)
+
         # Qualquer outro texto enviado é processado como dúvida para a IA
         elif text:
             send_telegram_message(chat_id, "🧠 *Pensando...*")
@@ -455,8 +628,23 @@ def telegram_webhook():
             editar_mensagem_telegram(
                 chat_id,
                 message_id,
-                "💸 *Módulo de Finanças*\n\nEm breve você poderá registrar seus gastos rápidos aqui!",
-                reply_markup={"inline_keyboard": [[{"text": "🏠 Voltar", "callback_data": "main_menu"}]]},
+                "💸 *Módulo de Finanças*\n\n"
+                "Acesse o app completo de gestão financeira ou registre gastos rápidos:\n\n"
+                "📌 *Comandos rápidos:*\n"
+                "`/gasto 50,00 Mercado` - Registra despesa\n"
+                "`/receita 2500,00 Salário` - Registra receita\n"
+                "`/resumo` - Ver resumo do mês",
+                reply_markup={
+                    "inline_keyboard": [
+                        [
+                            {
+                                "text": "💸 Abrir App de Finanças",
+                                "web_app": {"url": f"{APP_URL}/financas"},
+                            }
+                        ],
+                        [{"text": "🏠 Voltar", "callback_data": "main_menu"}],
+                    ]
+                },
             )
 
         elif data_code == "menu_ia":

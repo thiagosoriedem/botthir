@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💸 Gestão Financeira</title>
+    <!-- SDK do Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #f4f6f9);
+            --text-color: var(--tg-theme-text-color, #222);
+            --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+            --button-color: var(--tg-theme-button-color, #0088cc);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --blue: #3498db;
+            --orange: #f39c12;
+            --purple: #9b59b6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+
+        h3 {
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+
+        /* --- CARDS DE RESUMO --- */
+        .resumo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .resumo-card {
+            background-color: var(--card-bg);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .resumo-card.full {
+            grid-column: 1 / -1;
+        }
+
+        .resumo-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+            margin-bottom: 6px;
+        }
+
+        .resumo-valor {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .resumo-valor.positivo { color: var(--green); }
+        .resumo-valor.negativo { color: var(--red); }
+        .resumo-valor.receita { color: var(--green); }
+        .resumo-valor.despesa { color: var(--red); }
+
+        /* --- SEÇÕES --- */
+        .section {
+            background-color: var(--card-bg);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        /* --- BOTÕES --- */
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: white;
+            transition: opacity 0.2s;
+            background-color: var(--button-color);
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        .btn-green { background-color: var(--green); }
+        .btn-red { background-color: var(--red); }
+        .btn-blue { background-color: var(--blue); }
+        .btn-orange { background-color: var(--orange); }
+        .btn-purple { background-color: var(--purple); }
+        .btn-gray { background-color: #7f8c8d; }
+        .btn-sm { padding: 6px 10px; font-size: 0.75rem; border-radius: 8px; }
+        .btn-block { width: 100%; margin-top: 8px; }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+        }
+
+        /* --- FORMULÁRIOS --- */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 0.9rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- LISTA DE TRANSAÇÕES --- */
+        .transacao-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .transacao-item:last-child {
+            border-bottom: none;
+        }
+
+        .transacao-info {
+            flex: 1;
+        }
+
+        .transacao-descricao {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .transacao-categoria {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        .transacao-valor {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-right: 8px;
+        }
+
+        .transacao-valor.receita { color: var(--green); }
+        .transacao-valor.despesa { color: var(--red); }
+
+        .transacao-acoes {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* --- METAS --- */
+        .meta-item {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .meta-item:last-child {
+            border-bottom: none;
+        }
+
+        .meta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .meta-titulo {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .meta-valores {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: rgba(0, 0, 0, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background-color: var(--green);
+            transition: width 0.3s ease;
+        }
+
+        .meta-acoes {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        /* --- GRÁFICO --- */
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-bottom: 8px;
+        }
+
+        /* --- NAVEGAÇÃO --- */
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 10px 6px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-color);
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .nav-tab.active {
+            background-color: var(--button-color);
+            color: var(--button-text);
+        }
+
+        /* --- FILTRO MÊS --- */
+        .filtro-mes {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .filtro-mes button {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-color);
+            padding: 4px 8px;
+        }
+
+        .filtro-mes span {
+            font-weight: 600;
+            font-size: 0.9rem;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.5;
+            font-size: 0.9rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>💸 Gestão Financeira</h1>
+
+        <!-- NAVEGAÇÃO -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="mostrarAba('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="mostrarAba('transacoes')">💳 Transações</button>
+            <button class="nav-tab" onclick="mostrarAba('metas')">🎯 Metas</button>
+        </div>
+
+        <!-- FILTRO DE MÊS -->
+        <div class="filtro-mes">
+            <button onclick="mudarMes(-1)">◀</button>
+            <span id="mes-atual"></span>
+            <button onclick="mudarMes(1)">▶</button>
+        </div>
+
+        <!-- ===== DASHBOARD ===== -->
+        <div id="aba-dashboard">
+            <div class="resumo-grid">
+                <div class="resumo-card full">
+                    <div class="resumo-label">Saldo do Mês</div>
+                    <div class="resumo-valor" id="resumo-saldo">R$ 0,00</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="resumo-label">Receitas</div>
+                    <div class="resumo-valor receita" id="resumo-receitas">R$ 0,00</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="resumo-label">Despesas</div>
+                    <div class="resumo-valor despesa" id="resumo-despesas">R$ 0,00</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>📈 Despesas por Categoria</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="grafico-categorias"></canvas>
+                </div>
+                <div id="lista-categorias"></div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>🕐 Últimas Transações</h2>
+                    <button class="btn btn-sm btn-blue" onclick="mostrarAba('transacoes')">Ver todas</button>
+                </div>
+                <div id="ultimas-transacoes"></div>
+            </div>
+        </div>
+
+        <!-- ===== TRANSAÇÕES ===== -->
+        <div id="aba-transacoes" class="hidden">
+            <div class="btn-group">
+                <button class="btn btn-green" onclick="abrirFormTransacao('receita')">➕ Receita</button>
+                <button class="btn btn-red" onclick="abrirFormTransacao('despesa')">➖ Despesa</button>
+            </div>
+
+            <!-- FORMULÁRIO DE TRANSAÇÃO -->
+            <div id="form-transacao" class="section hidden">
+                <h3 id="form-transacao-titulo">Nova Transação</h3>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="input-descricao" placeholder="Ex: Salário, Mercado, Transporte...">
+                </div>
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="number" id="input-valor" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="input-categoria">
+                        <option value="Alimentação">🍔 Alimentação</option>
+                        <option value="Transporte">🚗 Transporte</option>
+                        <option value="Moradia">🏠 Moradia</option>
+                        <option value="Saúde">💊 Saúde</option>
+                        <option value="Educação">📚 Educação</option>
+                        <option value="Lazer">🎮 Lazer</option>
+                        <option value="Salário">💼 Salário</option>
+                        <option value="Investimentos">📈 Investimentos</option>
+                        <option value="Outros">📦 Outros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="input-data">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-green" onclick="salvarTransacao()">💾 Salvar</button>
+                    <button class="btn btn-gray" onclick="fecharFormTransacao()">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>📋 Todas as Transações</h2>
+                </div>
+                <div id="lista-transacoes"></div>
+            </div>
+        </div>
+
+        <!-- ===== METAS ===== -->
+        <div id="aba-metas" class="hidden">
+            <button class="btn btn-purple btn-block" onclick="abrirFormMeta()">🎯 Nova Meta</button>
+
+            <!-- FORMULÁRIO DE META -->
+            <div id="form-meta" class="section hidden">
+                <h3>Nova Meta Financeira</h3>
+                <div class="form-group">
+                    <label>Título</label>
+                    <input type="text" id="input-meta-titulo" placeholder="Ex: Viagem, Reserva de emergência...">
+                </div>
+                <div class="form-group">
+                    <label>Valor da Meta (R$)</label>
+                    <input type="number" id="input-meta-valor" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Valor Atual (R$)</label>
+                    <input type="number" id="input-meta-atual" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-green" onclick="salvarMeta()">💾 Salvar</button>
+                    <button class="btn btn-gray" onclick="fecharFormMeta()">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>🎯 Suas Metas</h2>
+                </div>
+                <div id="lista-metas"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+
+        const tgUser = Telegram.WebApp.initDataUnsafe?.user;
+        const userId = tgUser ? tgUser.id : 12345678;
+
+        // Estado global
+        let mesAtual = new Date().getMonth() + 1;
+        let anoAtual = new Date().getFullYear();
+        let tipoTransacaoForm = 'despesa';
+        let graficoCategorias = null;
+
+        const MESES = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+
+        // --- UTILITÁRIOS ---
+        function formatarMoeda(valor) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(valor || 0);
+        }
+
+        function formatarData(dataStr) {
+            if (!dataStr) return '';
+            const partes = dataStr.split('-');
+            if (partes.length !== 3) return dataStr;
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        function mostrarToast(mensagem) {
+            const toast = document.getElementById('toast');
+            toast.textContent = mensagem;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function atualizarLabelMes() {
+            document.getElementById('mes-atual').textContent = `${MESES[mesAtual - 1]} ${anoAtual}`;
+        }
+
+        function mudarMes(delta) {
+            mesAtual += delta;
+            if (mesAtual < 1) {
+                mesAtual = 12;
+                anoAtual--;
+            } else if (mesAtual > 12) {
+                mesAtual = 1;
+                anoAtual++;
+            }
+            atualizarLabelMes();
+            carregarDashboard();
+            carregarTransacoes();
+        }
+
+        // --- NAVEGAÇÃO DE ABAS ---
+        function mostrarAba(aba) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('#aba-dashboard, #aba-transacoes, #aba-metas').forEach(el => el.classList.add('hidden'));
+
+            if (aba === 'dashboard') {
+                document.querySelectorAll('.nav-tab')[0].classList.add('active');
+                document.getElementById('aba-dashboard').classList.remove('hidden');
+                carregarDashboard();
+            } else if (aba === 'transacoes') {
+                document.querySelectorAll('.nav-tab')[1].classList.add('active');
+                document.getElementById('aba-transacoes').classList.remove('hidden');
+                carregarTransacoes();
+            } else if (aba === 'metas') {
+                document.querySelectorAll('.nav-tab')[2].classList.add('active');
+                document.getElementById('aba-metas').classList.remove('hidden');
+                carregarMetas();
+            }
+        }
+
+        // ===== DASHBOARD =====
+        async function carregarDashboard() {
+            try {
+                const [resumoRes, categoriasRes, transacoesRes] = await Promise.all([
+                    fetch(`/api/financas/${userId}/resumo?mes=${mesAtual}&ano=${anoAtual}`),
+                    fetch(`/api/financas/${userId}/categorias?mes=${mesAtual}&ano=${anoAtual}`),
+                    fetch(`/api/financas/${userId}?mes=${mesAtual}&ano=${anoAtual}`)
+                ]);
+
+                const resumo = await resumoRes.json();
+                const categorias = await categoriasRes.json();
+                const transacoes = await transacoesRes.json();
+
+                // Atualiza cards de resumo
+                const saldoEl = document.getElementById('resumo-saldo');
+                saldoEl.textContent = formatarMoeda(resumo.saldo);
+                saldoEl.className = 'resumo-valor ' + (resumo.saldo >= 0 ? 'positivo' : 'negativo');
+
+                document.getElementById('resumo-receitas').textContent = formatarMoeda(resumo.total_receitas);
+                document.getElementById('resumo-despesas').textContent = formatarMoeda(resumo.total_despesas);
+
+                // Gráfico de categorias
+                renderizarGrafico(categorias);
+
+                // Lista de categorias
+                const listaCategorias = document.getElementById('lista-categorias');
+                const categoriasArray = Object.entries(categorias);
+                if (categoriasArray.length === 0) {
+                    listaCategorias.innerHTML = '<div class="empty-state">Nenhuma despesa neste mês.</div>';
+                } else {
+                    const totalDespesas = categoriasArray.reduce((sum, [, v]) => sum + v, 0);
+                    listaCategorias.innerHTML = categoriasArray.map(([cat, valor]) => {
+                        const pct = totalDespesas > 0 ? Math.round((valor / totalDespesas) * 100) : 0;
+                        return `
+                            <div style="margin-bottom: 8px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 3px;">
+                                    <span>${cat}</span>
+                                    <span>${formatarMoeda(valor)} (${pct}%)</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${pct}%; background-color: ${getCorCategoria(cat)};"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                // Últimas transações
+                const ultimas = document.getElementById('ultimas-transacoes');
+                if (transacoes.transacoes && transacoes.transacoes.length > 0) {
+                    const recentes = transacoes.transacoes.slice(0, 5);
+                    ultimas.innerHTML = recentes.map(t => `
+                        <div class="transacao-item">
+                            <div class="transacao-info">
+                                <div class="transacao-descricao">${t.descricao}</div>
+                                <div class="transacao-categoria">${t.categoria} • ${formatarData(t.data)}</div>
+                            </div>
+                            <div class="transacao-valor ${t.tipo}">${t.tipo === 'receita' ? '+' : '-'}${formatarMoeda(t.valor)}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    ultimas.innerHTML = '<div class="empty-state">Nenhuma transação neste mês.</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar dashboard:', err);
+                mostrarToast('Erro ao carregar dashboard');
+            }
+        }
+
+        function getCorCategoria(categoria) {
+            const cores = {
+                'Alimentação': '#e74c3c',
+                'Transporte': '#3498db',
+                'Moradia': '#9b59b6',
+                'Saúde': '#2ecc71',
+                'Educação': '#f39c12',
+                'Lazer': '#e67e22',
+                'Salário': '#27ae60',
+                'Investimentos': '#1abc9c',
+                'Outros': '#7f8c8d'
+            };
+            return cores[categoria] || '#7f8c8d';
+        }
+
+        function renderizarGrafico(categorias) {
+            const ctx = document.getElementById('grafico-categorias').getContext('2d');
+            const categoriasArray = Object.entries(categorias);
+
+            if (graficoCategorias) {
+                graficoCategorias.destroy();
+            }
+
+            if (categoriasArray.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                return;
+            }
+
+            graficoCategorias = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: categoriasArray.map(([cat]) => cat),
+                    datasets: [{
+                        data: categoriasArray.map(([, valor]) => valor),
+                        backgroundColor: categoriasArray.map(([cat]) => getCorCategoria(cat)),
+                        borderWidth: 2,
+                        borderColor: 'var(--card-bg)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 10 },
+                                boxWidth: 12,
+                                padding: 8
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ===== TRANSAÇÕES =====
+        async function carregarTransacoes() {
+            try {
+                const response = await fetch(`/api/financas/${userId}?mes=${mesAtual}&ano=${anoAtual}`);
+                const result = await response.json();
+
+                const lista = document.getElementById('lista-transacoes');
+                if (result.transacoes && result.transacoes.length > 0) {
+                    lista.innerHTML = result.transacoes.map(t => `
+                        <div class="transacao-item">
+                            <div class="transacao-info">
+                                <div class="transacao-descricao">${t.descricao}</div>
+                                <div class="transacao-categoria">${t.categoria} • ${formatarData(t.data)}</div>
+                            </div>
+                            <div class="transacao-valor ${t.tipo}">${t.tipo === 'receita' ? '+' : '-'}${formatarMoeda(t.valor)}</div>
+                            <div class="transacao-acoes">
+                                <button class="btn btn-sm btn-red" onclick="deletarTransacao('${t.id}')">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    lista.innerHTML = '<div class="empty-state">Nenhuma transação neste mês.<br>Clique em ➕ Receita ou ➖ Despesa para adicionar.</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar transações:', err);
+                mostrarToast('Erro ao carregar transações');
+            }
+        }
+
+        function abrirFormTransacao(tipo) {
+            tipoTransacaoForm = tipo;
+            document.getElementById('form-transacao-titulo').textContent =
+                tipo === 'receita' ? '➕ Nova Receita' : '➖ Nova Despesa';
+            document.getElementById('input-descricao').value = '';
+            document.getElementById('input-valor').value = '';
+            document.getElementById('input-data').value = new Date().toISOString().split('T')[0];
+
+            // Ajusta categorias para receita/despesa
+            const select = document.getElementById('input-categoria');
+            select.innerHTML = tipo === 'receita'
+                ? `
+                    <option value="Salário">💼 Salário</option>
+                    <option value="Investimentos">📈 Investimentos</option>
+                    <option value="Freelance">💻 Freelance</option>
+                    <option value="Outros">📦 Outros</option>
+                `
+                : `
+                    <option value="Alimentação">🍔 Alimentação</option>
+                    <option value="Transporte">🚗 Transporte</option>
+                    <option value="Moradia">🏠 Moradia</option>
+                    <option value="Saúde">💊 Saúde</option>
+                    <option value="Educação">📚 Educação</option>
+                    <option value="Lazer">🎮 Lazer</option>
+                    <option value="Outros">📦 Outros</option>
+                `;
+
+            document.getElementById('form-transacao').classList.remove('hidden');
+        }
+
+        function fecharFormTransacao() {
+            document.getElementById('form-transacao').classList.add('hidden');
+        }
+
+        async function salvarTransacao() {
+            const descricao = document.getElementById('input-descricao').value.trim();
+            const valor = parseFloat(document.getElementById('input-valor').value);
+            const categoria = document.getElementById('input-categoria').value;
+            const data = document.getElementById('input-data').value;
+
+            if (!descricao || !valor || valor <= 0) {
+                mostrarToast('Preencha a descrição e um valor válido!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/financas/${userId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tipo: tipoTransacaoForm,
+                        descricao: descricao,
+                        valor: valor,
+                        categoria: categoria,
+                        data: data
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('✅ Transação salva!');
+                    fecharFormTransacao();
+                    carregarTransacoes();
+                    carregarDashboard();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao salvar transação:', err);
+                mostrarToast('Erro ao salvar transação');
+            }
+        }
+
+        async function deletarTransacao(transacaoId) {
+            if (!confirm('Tem certeza que deseja excluir esta transação?')) return;
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/${transacaoId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('🗑️ Transação excluída!');
+                    carregarTransacoes();
+                    carregarDashboard();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao excluir transação:', err);
+                mostrarToast('Erro ao excluir transação');
+            }
+        }
+
+        // ===== METAS =====
+        async function carregarMetas() {
+            try {
+                const response = await fetch(`/api/financas/${userId}/metas`);
+                const result = await response.json();
+
+                const lista = document.getElementById('lista-metas');
+                if (result.metas && result.metas.length > 0) {
+                    lista.innerHTML = result.metas.map(m => {
+                        const pct = m.percentual || 0;
+                        const cor = pct >= 100 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--blue)';
+                        return `
+                            <div class="meta-item">
+                                <div class="meta-header">
+                                    <span class="meta-titulo">${m.titulo}</span>
+                                    <span class="meta-valores">${formatarMoeda(m.valor_atual)} / ${formatarMoeda(m.valor_meta)}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${Math.min(pct, 100)}%; background-color: ${cor};"></div>
+                                </div>
+                                <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px;">
+                                    ${pct >= 100 ? '🎉 Meta atingida!' : `${pct}% concluída`}
+                                </div>
+                                <div class="meta-acoes">
+                                    <button class="btn btn-sm btn-blue" onclick="atualizarMeta('${m.id}')">💰 Atualizar</button>
+                                    <button class="btn btn-sm btn-red" onclick="deletarMeta('${m.id}')">🗑️ Excluir</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    lista.innerHTML = '<div class="empty-state">Nenhuma meta cadastrada.<br>Clique em 🎯 Nova Meta para começar!</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar metas:', err);
+                mostrarToast('Erro ao carregar metas');
+            }
+        }
+
+        function abrirFormMeta() {
+            document.getElementById('input-meta-titulo').value = '';
+            document.getElementById('input-meta-valor').value = '';
+            document.getElementById('input-meta-atual').value = '';
+            document.getElementById('form-meta').classList.remove('hidden');
+        }
+
+        function fecharFormMeta() {
+            document.getElementById('form-meta').classList.add('hidden');
+        }
+
+        async function salvarMeta() {
+            const titulo = document.getElementById('input-meta-titulo').value.trim();
+            const valorMeta = parseFloat(document.getElementById('input-meta-valor').value);
+            const valorAtual = parseFloat(document.getElementById('input-meta-atual').value) || 0;
+
+            if (!titulo || !valorMeta || valorMeta <= 0) {
+                mostrarToast('Preencha o título e um valor de meta válido!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/metas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        titulo: titulo,
+                        valor_meta: valorMeta,
+                        valor_atual: valorAtual
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('✅ Meta criada!');
+                    fecharFormMeta();
+                    carregarMetas();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao salvar meta:', err);
+                mostrarToast('Erro ao salvar meta');
+            }
+        }
+
+        async function atualizarMeta(metaId) {
+            const novoValor = prompt('Novo valor atual (R$):');
+            if (novoValor === null) return;
+
+            const valor = parseFloat(novoValor);
+            if (isNaN(valor) || valor < 0) {
+                mostrarToast('Valor inválido!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/metas/${metaId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ valor_atual: valor })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('💰 Meta atualizada!');
+                    carregarMetas();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao atualizar meta:', err);
+                mostrarToast('Erro ao atualizar meta');
+            }
+        }
+
+        async function deletarMeta(metaId) {
+            if (!confirm('Tem certeza que deseja excluir esta meta?')) return;
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/metas/${metaId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('🗑️ Meta excluída!');
+                    carregarMetas();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao excluir meta:', err);
+                mostrarToast('Erro ao excluir meta');
+            }
+        }
+
+        // ===== INICIALIZAÇÃO =====
+        atualizarLabelMes();
+        carregarDashboard();
+    </script>
+</body>
+
+</html>
