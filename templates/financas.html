@@ -16,18 +16,33 @@
             --bg: var(--tg-theme-bg-color, #f8fafc);
             --surface: var(--tg-theme-secondary-bg-color, #ffffff);
             --text: var(--tg-theme-text-color, #0f172a);
-            --muted: #94a3b8;
-            --primary: var(--tg-theme-button-color, #6366f1);
+            --muted: var(--tg-theme-hint-color, #94a3b8);
+            --primary: var(--tg-theme-button-color, #d64550);
             --primary-text: var(--tg-theme-button-text-color, #ffffff);
+            --primary-soft: rgba(214, 69, 80, 0.12);
             --green: #10b981;
             --red: #ef4444;
             --amber: #f59e0b;
             --blue: #3b82f6;
-            --violet: #8b5cf6;
+            --violet: #e8737c;
             --teal: #14b8a6;
-            --border: #e2e8f0;
+            --border: var(--tg-theme-section-separator-color, #e2e8f0);
             --radius: 16px;
             --shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
+            --toast-bg: #1e293b;
+        }
+
+        /* Modo Escuro (fallback quando Telegram não fornece tema) */
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #17212b;
+                --surface: #232e3c;
+                --text: #f1f5f9;
+                --muted: #8b98a9;
+                --border: #334155;
+                --shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.25);
+                --toast-bg: #0f172a;
+            }
         }
 
         * {
@@ -69,12 +84,12 @@
             width: 40px;
             height: 40px;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            background: linear-gradient(135deg, var(--primary), var(--violet));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 4px 12px var(--primary-soft);
         }
 
         /* Nav Tabs */
@@ -121,7 +136,7 @@
         .nav-tab.active {
             background: var(--primary);
             color: var(--primary-text);
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 2px 8px var(--primary-soft);
         }
 
         /* Month Filter */
@@ -171,7 +186,7 @@
             padding: 16px;
             margin-bottom: 14px;
             box-shadow: var(--shadow);
-            border: 1px solid rgba(226, 232, 240, 0.5);
+            border: 1px solid var(--border);
         }
 
         .card-header {
@@ -203,12 +218,12 @@
             padding: 16px;
             text-align: center;
             box-shadow: var(--shadow);
-            border: 1px solid rgba(226, 232, 240, 0.5);
+            border: 1px solid var(--border);
         }
 
         .summary-card.full {
             grid-column: 1 / -1;
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            background: linear-gradient(135deg, var(--primary), var(--violet));
             color: white;
             border: none;
         }
@@ -385,7 +400,7 @@
         }
 
         .icon-btn:hover {
-            background: rgba(0, 0, 0, 0.05);
+            background: var(--primary-soft);
         }
 
         .icon-btn.danger:hover {
@@ -495,11 +510,11 @@
         }
 
         .b3-result {
-            background: rgba(59, 130, 246, 0.06);
+            background: var(--primary-soft);
             border-radius: 12px;
             padding: 14px;
             margin-bottom: 12px;
-            border: 1px solid rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--border);
         }
 
         .b3-ticker {
@@ -1068,7 +1083,7 @@
 
             if (aba === 'dashboard') carregarDashboard();
             else if (aba === 'transacoes') carregarTransacoes();
-            else if (aba === 'fixas') carregarDespesasFixas();
+            else if (aba === 'fixas') { carregarDespesasFixas(); carregarReceitasFixas(); }
             else if (aba === 'investimentos') { carregarInvestimentos(); carregarCrescimento(); }
             else if (aba === 'dividendos') { carregarDividendos(); carregarProjecaoDividendos(); carregarSelectInvestimentos(); }
             else if (aba === 'metas') carregarMetas();
@@ -1496,6 +1511,155 @@
             }
         }
 
+        // ===== RECEITAS FIXAS =====
+        async function carregarReceitasFixas() {
+            try {
+                const response = await fetch(`/api/financas/${userId}/receitas-fixas`);
+                const result = await response.json();
+
+                const lista = document.getElementById('lista-receitas-fixas');
+                if (result.receitas_fixas && result.receitas_fixas.length > 0) {
+                    lista.innerHTML = result.receitas_fixas.map(rf => {
+                        const fimTexto = rf.data_fim ? ` • Até ${formatarData(rf.data_fim)}` : ' • Indeterminada';
+                        return `
+                            <div class="list-item">
+                                <div class="item-info">
+                                    <div class="item-title">${rf.descricao}
+                                        <span class="badge ${rf.ativa ? 'badge-active' : 'badge-inactive'}">
+                                            ${rf.ativa ? '<i data-lucide="check-circle"></i> Ativa' : '<i data-lucide="pause-circle"></i> Pausada'}
+                                        </span>
+                                    </div>
+                                    <div class="item-subtitle">${rf.categoria} • Dia ${rf.dia_recebimento}${fimTexto}</div>
+                                </div>
+                                <div class="item-value receita">${formatarMoeda(rf.valor)}</div>
+                                <div class="item-actions">
+                                    <button class="icon-btn" onclick="toggleReceitaFixa('${rf.id}')">
+                                        <i data-lucide="${rf.ativa ? 'pause' : 'play'}"></i>
+                                    </button>
+                                    <button class="icon-btn danger" onclick="deletarReceitaFixa('${rf.id}')">
+                                        <i data-lucide="trash-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    lista.innerHTML = '<div class="empty"><i data-lucide="trending-up"></i><br>Nenhuma receita fixa cadastrada.</div>';
+                }
+                lucide.createIcons();
+            } catch (err) {
+                console.error('Erro ao carregar receitas fixas:', err);
+            }
+        }
+
+        function abrirFormReceitaFixa() {
+            document.getElementById('input-receita-fixa-descricao').value = '';
+            document.getElementById('input-receita-fixa-valor').value = '';
+            document.getElementById('input-receita-fixa-dia').value = '';
+            document.getElementById('input-receita-fixa-data-fim').value = '';
+            document.getElementById('form-receita-fixa').classList.remove('hidden');
+        }
+
+        function fecharFormReceitaFixa() {
+            document.getElementById('form-receita-fixa').classList.add('hidden');
+        }
+
+        async function salvarReceitaFixa() {
+            const descricao = document.getElementById('input-receita-fixa-descricao').value.trim();
+            const valor = parseFloat(document.getElementById('input-receita-fixa-valor').value);
+            const dia = parseInt(document.getElementById('input-receita-fixa-dia').value);
+            const categoria = document.getElementById('input-receita-fixa-categoria').value;
+            const dataFim = document.getElementById('input-receita-fixa-data-fim').value;
+
+            if (!descricao || !valor || !dia || dia < 1 || dia > 31) {
+                mostrarToast('Preencha todos os campos corretamente!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/receitas-fixas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        descricao: descricao,
+                        valor: valor,
+                        dia_recebimento: dia,
+                        categoria: categoria,
+                        data_fim: dataFim
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('Receita fixa salva!');
+                    fecharFormReceitaFixa();
+                    carregarReceitasFixas();
+                    carregarDashboard();
+                } else {
+                    mostrarToast(result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao salvar receita fixa:', err);
+            }
+        }
+
+        async function toggleReceitaFixa(receitaId) {
+            try {
+                const response = await fetch(`/api/financas/${userId}/receitas-fixas/${receitaId}/toggle`, {
+                    method: 'PUT'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    carregarReceitasFixas();
+                } else {
+                    mostrarToast(result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao alternar receita fixa:', err);
+            }
+        }
+
+        async function deletarReceitaFixa(receitaId) {
+            if (!confirm('Excluir esta receita fixa?')) return;
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/receitas-fixas/${receitaId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('Receita fixa excluída!');
+                    carregarReceitasFixas();
+                    carregarDashboard();
+                } else {
+                    mostrarToast(result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao excluir receita fixa:', err);
+            }
+        }
+
+        async function aplicarReceitasFixas() {
+            if (!confirm('Aplicar receitas fixas pendentes como transações?')) return;
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/aplicar-receitas-fixas?mes=${mesAtual}&ano=${anoAtual}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast(`${result.aplicadas} receita(s) aplicada(s)!`);
+                    carregarReceitasFixas();
+                    carregarDashboard();
+                    carregarTransacoes();
+                } else {
+                    mostrarToast(result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao aplicar receitas fixas:', err);
+            }
+        }
+
         // ===== INVESTIMENTOS =====
         async function carregarInvestimentos() {
             try {
@@ -1512,6 +1676,9 @@
                                     <div class="invest-type">${getTipoInvestimentoLabel(inv.tipo)} • ${inv.corretora || 'Sem corretora'}</div>
                                 </div>
                                 <div class="item-actions">
+                                    <button class="icon-btn" onclick="editarInvestimento('${inv.id}')">
+                                        <i data-lucide="pencil"></i>
+                                    </button>
                                     <button class="icon-btn danger" onclick="deletarInvestimento('${inv.id}')">
                                         <i data-lucide="trash-2"></i>
                                     </button>
@@ -1592,7 +1759,10 @@
             return labels[tipo] || tipo;
         }
 
+        let investimentoEmEdicao = null;
+
         function abrirFormInvestimento() {
+            investimentoEmEdicao = null;
             document.getElementById('input-inv-nome').value = '';
             document.getElementById('input-inv-valor').value = '';
             document.getElementById('input-inv-corretora').value = '';
@@ -1600,6 +1770,23 @@
             document.getElementById('input-inv-data').value = new Date().toISOString().split('T')[0];
             document.getElementById('input-inv-obs').value = '';
             document.getElementById('form-investimento').classList.remove('hidden');
+        }
+
+        function editarInvestimento(investimentoId) {
+            fetch(`/api/financas/${userId}/investimentos`)
+                .then(r => r.json())
+                .then(result => {
+                    const inv = result.investimentos.find(i => i.id === investimentoId);
+                    if (!inv) return;
+                    investimentoEmEdicao = investimentoId;
+                    document.getElementById('input-inv-nome').value = inv.nome;
+                    document.getElementById('input-inv-valor').value = inv.valor_investido;
+                    document.getElementById('input-inv-corretora').value = inv.corretora || '';
+                    document.getElementById('input-inv-taxa').value = inv.taxa_anual || '';
+                    document.getElementById('input-inv-data').value = inv.data_inicio || '';
+                    document.getElementById('input-inv-obs').value = inv.observacoes || '';
+                    document.getElementById('form-investimento').classList.remove('hidden');
+                });
         }
 
         function fecharFormInvestimento() {
@@ -1621,8 +1808,13 @@
             }
 
             try {
-                const response = await fetch(`/api/financas/${userId}/investimentos`, {
-                    method: 'POST',
+                const url = investimentoEmEdicao
+                    ? `/api/financas/${userId}/investimentos/${investimentoEmEdicao}`
+                    : `/api/financas/${userId}/investimentos`;
+                const method = investimentoEmEdicao ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         nome: nome,
@@ -1637,7 +1829,8 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('Investimento salvo!');
+                    mostrarToast(investimentoEmEdicao ? 'Investimento atualizado!' : 'Investimento salvo!');
+                    investimentoEmEdicao = null;
                     fecharFormInvestimento();
                     carregarInvestimentos();
                     carregarCrescimento();
@@ -1743,6 +1936,9 @@
                             </div>
                             <div class="item-value receita">${formatarMoeda(div.valor_estimado)}</div>
                             <div class="item-actions">
+                                <button class="icon-btn" onclick="editarDividendo('${div.id}')">
+                                    <i data-lucide="pencil"></i>
+                                </button>
                                 <button class="icon-btn danger" onclick="deletarDividendo('${div.id}')">
                                     <i data-lucide="trash-2"></i>
                                 </button>
@@ -1803,11 +1999,49 @@
             return labels[freq] || freq;
         }
 
+        let dividendoEmEdicao = null;
+
         function abrirFormDividendo() {
+            dividendoEmEdicao = null;
             document.getElementById('input-div-descricao').value = '';
             document.getElementById('input-div-valor').value = '';
             document.getElementById('input-div-dia').value = '15';
             document.getElementById('form-dividendo').classList.remove('hidden');
+        }
+
+        function editarDividendo(dividendoId) {
+            fetch(`/api/financas/${userId}/dividendos`)
+                .then(r => r.json())
+                .then(result => {
+                    const div = result.dividendos.find(d => d.id === dividendoId);
+                    if (!div) return;
+                    dividendoEmEdicao = dividendoId;
+                    document.getElementById('input-div-descricao').value = div.descricao;
+                    document.getElementById('input-div-valor').value = div.valor_estimado;
+                    document.getElementById('input-div-frequencia').value = div.frequencia;
+                    document.getElementById('input-div-dia').value = div.dia_recebimento;
+                    document.getElementById('form-dividendo').classList.remove('hidden');
+                });
+        }
+
+        async function aplicarDividendosReceita() {
+            if (!confirm('Contabilizar dividendos pendentes como receitas deste mês?')) return;
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/dividendos/aplicar?mes=${mesAtual}&ano=${anoAtual}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast(`${result.aplicados} dividendo(s) contabilizado(s) como receita!`);
+                    carregarDashboard();
+                    carregarTransacoes();
+                } else {
+                    mostrarToast(result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao aplicar dividendos:', err);
+            }
         }
 
         function fecharFormDividendo() {
@@ -1827,8 +2061,13 @@
             }
 
             try {
-                const response = await fetch(`/api/financas/${userId}/dividendos`, {
-                    method: 'POST',
+                const url = dividendoEmEdicao
+                    ? `/api/financas/${userId}/dividendos/${dividendoEmEdicao}`
+                    : `/api/financas/${userId}/dividendos`;
+                const method = dividendoEmEdicao ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         investimento_id: investimentoId,
@@ -1841,7 +2080,8 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('Dividendo salvo!');
+                    mostrarToast(dividendoEmEdicao ? 'Dividendo atualizado!' : 'Dividendo salvo!');
+                    dividendoEmEdicao = null;
                     fecharFormDividendo();
                     carregarDividendos();
                     carregarProjecaoDividendos();

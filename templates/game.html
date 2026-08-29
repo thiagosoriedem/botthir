@@ -14,16 +14,32 @@
             --bg: var(--tg-theme-bg-color, #f8fafc);
             --surface: var(--tg-theme-secondary-bg-color, #ffffff);
             --text: var(--tg-theme-text-color, #0f172a);
-            --muted: #94a3b8;
-            --primary: var(--tg-theme-button-color, #6366f1);
+            --muted: var(--tg-theme-hint-color, #94a3b8);
+            --primary: var(--tg-theme-button-color, #d64550);
             --primary-text: var(--tg-theme-button-text-color, #ffffff);
+            --primary-soft: rgba(214, 69, 80, 0.12);
             --green: #10b981;
             --red: #ef4444;
             --amber: #f59e0b;
             --blue: #3b82f6;
-            --border: #e2e8f0;
+            --violet: #e8737c;
+            --border: var(--tg-theme-section-separator-color, #e2e8f0);
             --radius: 16px;
             --shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
+            --overlay: rgba(15, 23, 42, 0.8);
+        }
+
+        /* Modo Escuro (fallback quando Telegram não fornece tema) */
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #17212b;
+                --surface: #232e3c;
+                --text: #f1f5f9;
+                --muted: #8b98a9;
+                --border: #334155;
+                --shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.25);
+                --overlay: rgba(0, 0, 0, 0.75);
+            }
         }
 
         * {
@@ -69,12 +85,12 @@
             width: 40px;
             height: 40px;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            background: linear-gradient(135deg, var(--primary), var(--violet));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 4px 12px var(--primary-soft);
         }
 
         /* Score Board */
@@ -90,7 +106,7 @@
             border-radius: 12px;
             padding: 10px 16px;
             box-shadow: var(--shadow);
-            border: 1px solid rgba(226, 232, 240, 0.5);
+            border: 1px solid var(--border);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -157,7 +173,7 @@
             border-color: var(--primary);
             background: var(--primary);
             color: var(--primary-text);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 4px 12px var(--primary-soft);
         }
 
         .card.matched {
@@ -179,7 +195,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(15, 23, 42, 0.8);
+            background: var(--overlay);
             backdrop-filter: blur(8px);
             display: flex;
             flex-direction: column;
@@ -200,7 +216,7 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--green), #14b8a6);
+            background: linear-gradient(135deg, var(--green), var(--teal));
             display: flex;
             align-items: center;
             justify-content: center;
