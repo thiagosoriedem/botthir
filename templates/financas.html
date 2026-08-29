@@ -1320,7 +1320,6 @@
         function renderizarGraficoTransacoes(transacoes) {
             const canvas = document.getElementById('grafico-transacoes');
             if (!canvas) return;
-            const ctx = canvas.getContext('2d');
 
             if (graficoTransacoes) graficoTransacoes.destroy();
 
@@ -1333,61 +1332,67 @@
 
             const maxVal = Math.max(totalReceitas, totalDespesas, 100);
 
-            graficoTransacoes = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Receitas', 'Despesas'],
-                    datasets: [{
-                        data: [totalReceitas, totalDespesas],
-                        backgroundColor: ['var(--green)', 'var(--red)'],
-                        borderWidth: 0,
-                        borderRadius: 8,
-                        barPercentage: 0.6,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 750,
-                        easing: 'easeOutQuart'
+            // Usa requestAnimationFrame para garantir que o canvas tenha dimensões corretas
+            requestAnimationFrame(() => {
+                const ctx = canvas.getContext('2d');
+                graficoTransacoes = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Receitas', 'Despesas'],
+                        datasets: [{
+                            data: [totalReceitas, totalDespesas],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderWidth: 0,
+                            borderRadius: 8,
+                            barPercentage: 0.6,
+                        }]
                     },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(ctx) {
-                                    return formatarMoeda(ctx.parsed.y);
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 750,
+                            easing: 'easeOutQuart'
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return formatarMoeda(ctx.parsed.y);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { display: false, drawBorder: false },
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'R$ ' + value.toLocaleString('pt-BR');
+                                    },
+                                    color: 'var(--muted)',
+                                    font: { size: 11 }
+                                },
+                                max: maxVal * 1.3
+                            },
+                            x: {
+                                grid: { display: false, drawBorder: false },
+                                ticks: {
+                                    color: 'var(--muted)',
+                                    font: { size: 12, weight: 600 }
                                 }
                             }
                         }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { display: false, drawBorder: false },
-                            ticks: {
-                                callback: function(value) {
-                                    return 'R$ ' + value.toLocaleString('pt-BR');
-                                },
-                                color: 'var(--muted)',
-                                font: { size: 11 }
-                            },
-                            max: maxVal * 1.3
-                        },
-                        x: {
-                            grid: { display: false, drawBorder: false },
-                            ticks: {
-                                color: 'var(--muted)',
-                                font: { size: 12, weight: 600 }
-                            }
-                        }
                     }
-                }
-            });
+                });
 
-            // Força o redimensionamento após o render
-            setTimeout(() => graficoTransacoes.resize(), 100);
+                // Força o redimensionamento após o render
+                setTimeout(() => {
+                    if (graficoTransacoes) graficoTransacoes.resize();
+                }, 100);
+            });
         }
 
         let transacaoEmEdicao = null;
