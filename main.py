@@ -95,6 +95,9 @@ def get_main_menu_keyboard():
             [
                 {"text": "💸 Abrir App Finanças", "web_app": {"url": f"{APP_URL}/financas"}}
             ],
+            [
+                {"text": "🎮 Mini-Games", "callback_data": "menu_jogos"}
+            ],
         ]
     }
 
@@ -145,6 +148,10 @@ def setup_bot_commands():
             "command": "resumo",
             "description": "Mostra resumo financeiro do mês",
         },
+        {
+            "command": "jogos",
+            "description": "Abre a central de mini-games",
+        },
     ]
 
     try:
@@ -173,7 +180,7 @@ def enviar_menu_jogos(chat_id):
                     {
                         "text": "⚡ Jogo da Memória",
                         "web_app": {
-                            "url": "https://botthir.onrender.com/templates/game.html"
+                            "url": f"{APP_URL}/game.html"
                         },
                     }
                 ],
@@ -225,9 +232,7 @@ def home():
 
 @app.route("/game.html")
 def servir_jogo():
-    with open("game.html", "r", encoding="utf-8") as f:
-        conteudo = f.read()
-    return render_template(conteudo)
+    return render_template("game.html")
 
 # Rota que entrega a página HTML do Mini App Flashcards
 @app.route("/flashcards")
@@ -641,6 +646,10 @@ def telegram_webhook():
                     reply = "⚠️ Informe o título da tarefa. Exemplo:\n`/novatarefa Comprar material de estudo`"
                 send_telegram_message(chat_id, reply)
 
+        # ABRIR CENTRAL DE JOGOS: /jogos
+        elif text in ["/jogos", "/jogo"]:
+            enviar_menu_jogos(chat_id)
+
         # REGISTRAR DESPESA: /gasto 50,00 Mercado
         elif text.startswith("/gasto"):
             conteudo = text.replace("/gasto", "").strip()
@@ -779,6 +788,10 @@ def telegram_webhook():
                         sigla, next_offset, total_items
                     )
                     editar_mensagem_telegram(chat_id, message_id, msg, reply_markup=reply_markup)
+
+        # MÓDULO: MINI-GAMES
+        elif data_code == "menu_jogos":
+            enviar_menu_jogos(chat_id)
 
         # MÓDULO: LEMBRETES & TAREFAS
         elif data_code == "menu_lembretes":

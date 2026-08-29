@@ -4,24 +4,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💸 Gestão Financeira</title>
+    <title>Finanças</title>
     <!-- SDK do Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Chart.js para gráficos -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --bg-color: var(--tg-theme-bg-color, #f4f6f9);
-            --text-color: var(--tg-theme-text-color, #222);
-            --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
-            --button-color: var(--tg-theme-button-color, #0088cc);
-            --button-text: var(--tg-theme-button-text-color, #ffffff);
-            --green: #2ecc71;
-            --red: #e74c3c;
-            --blue: #3498db;
-            --orange: #f39c12;
-            --purple: #9b59b6;
-            --teal: #1abc9c;
+            --bg: var(--tg-theme-bg-color, #f8fafc);
+            --surface: var(--tg-theme-secondary-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #0f172a);
+            --muted: #94a3b8;
+            --primary: var(--tg-theme-button-color, #6366f1);
+            --primary-text: var(--tg-theme-button-text-color, #ffffff);
+            --green: #10b981;
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --blue: #3b82f6;
+            --violet: #8b5cf6;
+            --teal: #14b8a6;
+            --border: #e2e8f0;
+            --radius: 16px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
         }
 
         * {
@@ -31,11 +37,12 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
             padding: 16px;
+            -webkit-font-smoothing: antialiased;
         }
 
         .container {
@@ -43,102 +50,228 @@
             margin: 0 auto;
         }
 
-        h1 {
-            font-size: 1.4rem;
-            margin-bottom: 16px;
-            text-align: center;
-        }
-
-        h2 {
-            font-size: 1.1rem;
-            margin-bottom: 12px;
-        }
-
-        h3 {
-            font-size: 0.95rem;
-            margin-bottom: 8px;
-        }
-
-        /* --- CARDS DE RESUMO --- */
-        .resumo-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             margin-bottom: 20px;
+            padding: 4px 0;
         }
 
-        .resumo-card {
-            background-color: var(--card-bg);
-            border-radius: 14px;
-            padding: 16px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-
-        .resumo-card.full {
-            grid-column: 1 / -1;
-        }
-
-        .resumo-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.6;
-            margin-bottom: 6px;
-        }
-
-        .resumo-valor {
-            font-size: 1.5rem;
+        .header-title {
+            font-size: 1.25rem;
             font-weight: 700;
+            letter-spacing: -0.02em;
         }
 
-        .resumo-valor.positivo { color: var(--green); }
-        .resumo-valor.negativo { color: var(--red); }
-        .resumo-valor.receita { color: var(--green); }
-        .resumo-valor.despesa { color: var(--red); }
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
 
-        /* --- SEÇÕES --- */
-        .section {
-            background-color: var(--card-bg);
+        /* Nav Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--surface);
             border-radius: 14px;
-            padding: 16px;
+            padding: 5px;
             margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+            scrollbar-width: none;
         }
 
-        .section-header {
+        .nav-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-tab {
+            flex: 1;
+            min-width: 64px;
+            padding: 9px 6px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+        }
+
+        .nav-tab svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .nav-tab.active {
+            background: var(--primary);
+            color: var(--primary-text);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Month Filter */
+        .month-filter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .month-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 10px;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+        }
+
+        .month-btn:active {
+            transform: scale(0.92);
+        }
+
+        .month-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .month-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            min-width: 130px;
+            text-align: center;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
         }
 
-        /* --- BOTÕES --- */
+        .card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Summary Grid */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .summary-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .summary-card.full {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            color: white;
+            border: none;
+        }
+
+        .summary-card.full .summary-label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .summary-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .summary-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .summary-value.positive { color: var(--green); }
+        .summary-value.negative { color: var(--red); }
+        .summary-value.receita { color: var(--green); }
+        .summary-value.despesa { color: var(--red); }
+
+        /* Buttons */
         .btn {
             padding: 10px 16px;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-weight: 600;
             font-size: 0.85rem;
             cursor: pointer;
             color: white;
-            transition: opacity 0.2s;
-            background-color: var(--button-color);
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
         }
 
         .btn:active {
-            opacity: 0.8;
+            transform: scale(0.96);
         }
 
-        .btn-green { background-color: var(--green); }
-        .btn-red { background-color: var(--red); }
-        .btn-blue { background-color: var(--blue); }
-        .btn-orange { background-color: var(--orange); }
-        .btn-purple { background-color: var(--purple); }
-        .btn-teal { background-color: var(--teal); }
-        .btn-gray { background-color: #7f8c8d; }
+        .btn-primary { background: var(--primary); }
+        .btn-green { background: var(--green); }
+        .btn-red { background: var(--red); }
+        .btn-blue { background: var(--blue); }
+        .btn-amber { background: var(--amber); }
+        .btn-violet { background: var(--violet); }
+        .btn-teal { background: var(--teal); }
+        .btn-gray { background: #94a3b8; }
         .btn-sm { padding: 6px 10px; font-size: 0.75rem; border-radius: 8px; }
-        .btn-block { width: 100%; margin-top: 8px; }
+        .btn-block { width: 100%; }
 
         .btn-group {
             display: flex;
@@ -150,442 +283,376 @@
             flex: 1;
         }
 
-        /* --- FORMULÁRIOS --- */
+        /* Forms */
         .form-group {
             margin-bottom: 12px;
         }
 
         .form-group label {
             display: block;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
             margin-bottom: 4px;
-            opacity: 0.8;
+            color: var(--muted);
         }
 
         .form-group input,
         .form-group select {
             width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
             font-size: 0.9rem;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background: var(--bg);
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--primary);
         }
 
         .hidden {
             display: none !important;
         }
 
-        /* --- LISTA DE TRANSAÇÕES --- */
-        .transacao-item {
+        /* List Items */
+        .list-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 10px 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            border-bottom: 1px solid var(--border);
         }
 
-        .transacao-item:last-child {
+        .list-item:last-child {
             border-bottom: none;
         }
 
-        .transacao-info {
+        .item-info {
             flex: 1;
+            min-width: 0;
         }
 
-        .transacao-descricao {
+        .item-title {
             font-weight: 600;
             font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .transacao-categoria {
+        .item-subtitle {
             font-size: 0.75rem;
-            opacity: 0.6;
+            color: var(--muted);
             margin-top: 2px;
         }
 
-        .transacao-valor {
+        .item-value {
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             margin-right: 8px;
+            white-space: nowrap;
         }
 
-        .transacao-valor.receita { color: var(--green); }
-        .transacao-valor.despesa { color: var(--red); }
+        .item-value.receita { color: var(--green); }
+        .item-value.despesa { color: var(--red); }
 
-        .transacao-acoes {
+        .item-actions {
             display: flex;
             gap: 4px;
         }
 
-        /* --- METAS --- */
-        .meta-item {
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-        .meta-item:last-child {
-            border-bottom: none;
-        }
-
-        .meta-header {
+        .icon-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 6px;
+            justify-content: center;
+            transition: all 0.2s;
         }
 
-        .meta-titulo {
+        .icon-btn svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .icon-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .icon-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--red);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.65rem;
             font-weight: 600;
-            font-size: 0.9rem;
+            gap: 4px;
         }
 
-        .meta-valores {
-            font-size: 0.8rem;
-            opacity: 0.7;
+        .badge svg {
+            width: 10px;
+            height: 10px;
         }
 
-        .progress-bar {
-            height: 8px;
-            background-color: rgba(0, 0, 0, 0.08);
-            border-radius: 4px;
+        .badge-active { background: rgba(16, 185, 129, 0.1); color: var(--green); }
+        .badge-inactive { background: rgba(148, 163, 184, 0.1); color: var(--muted); }
+
+        /* Progress */
+        .progress {
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
             overflow: hidden;
-            margin-bottom: 6px;
+            margin: 6px 0;
         }
 
         .progress-fill {
             height: 100%;
-            border-radius: 4px;
-            background-color: var(--green);
+            border-radius: 3px;
+            background: var(--green);
             transition: width 0.3s ease;
         }
 
-        .meta-acoes {
-            display: flex;
-            gap: 6px;
-            margin-top: 6px;
+        /* Empty State */
+        .empty {
+            text-align: center;
+            padding: 24px 16px;
+            color: var(--muted);
+            font-size: 0.85rem;
         }
 
-        /* --- GRÁFICO --- */
-        .chart-container {
+        .empty svg {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 8px;
+            opacity: 0.4;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Chart */
+        .chart-wrap {
             position: relative;
             height: 200px;
             margin-bottom: 8px;
         }
 
-        /* --- NAVEGAÇÃO --- */
-        .nav-tabs {
+        /* B3 Search */
+        .b3-search {
             display: flex;
-            gap: 4px;
-            margin-bottom: 16px;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 6px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
-        .nav-tab {
+        .b3-search input {
             flex: 1;
-            min-width: 80px;
-            padding: 10px 4px;
-            border: none;
-            border-radius: 8px;
-            background: transparent;
-            color: var(--text-color);
-            font-weight: 600;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: background 0.2s;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+            background: var(--bg);
+            color: var(--text);
+            outline: none;
+            text-transform: uppercase;
         }
 
-        .nav-tab.active {
-            background-color: var(--button-color);
-            color: var(--button-text);
+        .b3-result {
+            background: rgba(59, 130, 246, 0.06);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.1);
         }
 
-        /* --- FILTRO MÊS --- */
-        .filtro-mes {
+        .b3-ticker {
+            font-size: 1rem;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 16px;
+            gap: 6px;
         }
 
-        .filtro-mes button {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            color: var(--text-color);
-            padding: 4px 8px;
+        .b3-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 4px 0;
+            letter-spacing: -0.02em;
         }
 
-        .filtro-mes span {
-            font-weight: 600;
-            font-size: 0.9rem;
-            min-width: 120px;
-            text-align: center;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 20px;
-            opacity: 0.5;
-            font-size: 0.9rem;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            max-width: 90%;
-            text-align: center;
-        }
-
-        .toast.show {
-            opacity: 1;
-        }
-
-        /* --- DESPESAS FIXAS --- */
-        .fixa-item {
+        .b3-meta {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-        .fixa-item:last-child {
-            border-bottom: none;
-        }
-
-        .fixa-info {
-            flex: 1;
-        }
-
-        .fixa-descricao {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .fixa-detalhes {
             font-size: 0.75rem;
-            opacity: 0.6;
-            margin-top: 2px;
+            color: var(--muted);
+            margin-top: 6px;
         }
 
-        .fixa-valor {
-            font-weight: 700;
-            font-size: 0.95rem;
-            margin-right: 8px;
-            color: var(--red);
-        }
+        .trend-up { color: var(--green); }
+        .trend-down { color: var(--red); }
 
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
-        .badge-ativa { background-color: rgba(46, 204, 113, 0.2); color: var(--green); }
-        .badge-inativa { background-color: rgba(127, 140, 141, 0.2); color: #7f8c8d; }
-
-        /* --- INVESTIMENTOS --- */
-        .investimento-item {
+        /* Investment */
+        .invest-item {
             padding: 12px 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            border-bottom: 1px solid var(--border);
         }
 
-        .investimento-item:last-child {
+        .invest-item:last-child {
             border-bottom: none;
         }
 
-        .investimento-header {
+        .invest-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 6px;
         }
 
-        .investimento-nome {
+        .invest-name {
             font-weight: 600;
             font-size: 0.9rem;
         }
 
-        .investimento-tipo {
+        .invest-type {
             font-size: 0.7rem;
-            opacity: 0.6;
+            color: var(--muted);
         }
 
-        .investimento-valores {
+        .invest-values {
             display: flex;
             justify-content: space-between;
             font-size: 0.8rem;
             margin-bottom: 4px;
         }
 
-        .investimento-crescimento {
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .crescimento-positivo { color: var(--green); }
-        .crescimento-negativo { color: var(--red); }
-
-        /* --- DIVIDENDOS --- */
-        .dividendo-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-        .dividendo-item:last-child {
-            border-bottom: none;
-        }
-
-        .dividendo-info {
-            flex: 1;
-        }
-
-        .dividendo-descricao {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .dividendo-detalhes {
-            font-size: 0.75rem;
-            opacity: 0.6;
-            margin-top: 2px;
-        }
-
-        .dividendo-valor {
-            font-weight: 700;
-            font-size: 0.95rem;
-            margin-right: 8px;
-            color: var(--green);
-        }
-
-        /* --- B3 --- */
-        .b3-busca {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .b3-busca input {
-            flex: 1;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 0.9rem;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            text-transform: uppercase;
-        }
-
-        .b3-resultado {
-            background-color: rgba(52, 152, 219, 0.1);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
-        }
-
-        .b3-ticker {
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-
-        .b3-preco {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin: 4px 0;
-        }
-
-        .b3-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            margin-top: 6px;
-        }
+        .growth-pos { color: var(--green); font-weight: 600; }
+        .growth-neg { color: var(--red); font-weight: 600; }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>💸 Gestão Financeira</h1>
-
-        <!-- NAVEGAÇÃO -->
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="mostrarAba('dashboard')">📊 Dashboard</button>
-            <button class="nav-tab" onclick="mostrarAba('transacoes')">💳 Transações</button>
-            <button class="nav-tab" onclick="mostrarAba('fixas')">🔁 Fixas</button>
-            <button class="nav-tab" onclick="mostrarAba('investimentos')">📈 Invest.</button>
-            <button class="nav-tab" onclick="mostrarAba('dividendos')">💵 Dividendos</button>
-            <button class="nav-tab" onclick="mostrarAba('metas')">🎯 Metas</button>
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">Finanças</div>
+            <div class="header-icon">
+                <i data-lucide="wallet"></i>
+            </div>
         </div>
 
-        <!-- FILTRO DE MÊS -->
-        <div class="filtro-mes">
-            <button onclick="mudarMes(-1)">◀</button>
-            <span id="mes-atual"></span>
-            <button onclick="mudarMes(1)">▶</button>
+        <!-- Nav -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="mostrarAba('dashboard')">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Dashboard</span>
+            </button>
+            <button class="nav-tab" onclick="mostrarAba('transacoes')">
+                <i data-lucide="arrow-left-right"></i>
+                <span>Transações</span>
+            </button>
+            <button class="nav-tab" onclick="mostrarAba('fixas')">
+                <i data-lucide="repeat"></i>
+                <span>Fixas</span>
+            </button>
+            <button class="nav-tab" onclick="mostrarAba('investimentos')">
+                <i data-lucide="trending-up"></i>
+                <span>Invest.</span>
+            </button>
+            <button class="nav-tab" onclick="mostrarAba('dividendos')">
+                <i data-lucide="banknote"></i>
+                <span>Dividendos</span>
+            </button>
+            <button class="nav-tab" onclick="mostrarAba('metas')">
+                <i data-lucide="target"></i>
+                <span>Metas</span>
+            </button>
+        </div>
+
+        <!-- Month Filter -->
+        <div class="month-filter">
+            <button class="month-btn" onclick="mudarMes(-1)">
+                <i data-lucide="chevron-left"></i>
+            </button>
+            <span class="month-label" id="mes-atual"></span>
+            <button class="month-btn" onclick="mudarMes(1)">
+                <i data-lucide="chevron-right"></i>
+            </button>
         </div>
 
         <!-- ===== DASHBOARD ===== -->
         <div id="aba-dashboard">
-            <div class="resumo-grid">
-                <div class="resumo-card full">
-                    <div class="resumo-label">Saldo do Mês</div>
-                    <div class="resumo-valor" id="resumo-saldo">R$ 0,00</div>
+            <div class="summary-grid">
+                <div class="summary-card full">
+                    <div class="summary-label">Saldo do Mês</div>
+                    <div class="summary-value" id="resumo-saldo" style="color: white;">R$ 0,00</div>
                 </div>
-                <div class="resumo-card">
-                    <div class="resumo-label">Receitas</div>
-                    <div class="resumo-valor receita" id="resumo-receitas">R$ 0,00</div>
+                <div class="summary-card">
+                    <div class="summary-label">Receitas</div>
+                    <div class="summary-value receita" id="resumo-receitas">R$ 0,00</div>
                 </div>
-                <div class="resumo-card">
-                    <div class="resumo-label">Despesas</div>
-                    <div class="resumo-valor despesa" id="resumo-despesas">R$ 0,00</div>
+                <div class="summary-card">
+                    <div class="summary-label">Despesas</div>
+                    <div class="summary-value despesa" id="resumo-despesas">R$ 0,00</div>
                 </div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>📈 Despesas por Categoria</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Despesas por Categoria</span>
                 </div>
-                <div class="chart-container">
+                <div class="chart-wrap">
                     <canvas id="grafico-categorias"></canvas>
                 </div>
                 <div id="lista-categorias"></div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>🔮 Previsão do Mês</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Previsão do Mês</span>
                 </div>
                 <div id="previsao-despesas"></div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>🕐 Últimas Transações</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Últimas Transações</span>
                     <button class="btn btn-sm btn-blue" onclick="mostrarAba('transacoes')">Ver todas</button>
                 </div>
                 <div id="ultimas-transacoes"></div>
@@ -595,16 +662,21 @@
         <!-- ===== TRANSAÇÕES ===== -->
         <div id="aba-transacoes" class="hidden">
             <div class="btn-group">
-                <button class="btn btn-green" onclick="abrirFormTransacao('receita')">➕ Receita</button>
-                <button class="btn btn-red" onclick="abrirFormTransacao('despesa')">➖ Despesa</button>
+                <button class="btn btn-green" onclick="abrirFormTransacao('receita')">
+                    <i data-lucide="plus"></i> Receita
+                </button>
+                <button class="btn btn-red" onclick="abrirFormTransacao('despesa')">
+                    <i data-lucide="minus"></i> Despesa
+                </button>
             </div>
 
-            <!-- FORMULÁRIO DE TRANSAÇÃO -->
-            <div id="form-transacao" class="section hidden">
-                <h3 id="form-transacao-titulo">Nova Transação</h3>
+            <div id="form-transacao" class="card hidden">
+                <div class="card-header">
+                    <span class="card-title" id="form-transacao-titulo">Nova Transação</span>
+                </div>
                 <div class="form-group">
                     <label>Descrição</label>
-                    <input type="text" id="input-descricao" placeholder="Ex: Salário, Mercado, Transporte...">
+                    <input type="text" id="input-descricao" placeholder="Ex: Salário, Mercado...">
                 </div>
                 <div class="form-group">
                     <label>Valor (R$)</label>
@@ -612,31 +684,23 @@
                 </div>
                 <div class="form-group">
                     <label>Categoria</label>
-                    <select id="input-categoria">
-                        <option value="Alimentação">🍔 Alimentação</option>
-                        <option value="Transporte">🚗 Transporte</option>
-                        <option value="Moradia">🏠 Moradia</option>
-                        <option value="Saúde">💊 Saúde</option>
-                        <option value="Educação">📚 Educação</option>
-                        <option value="Lazer">🎮 Lazer</option>
-                        <option value="Salário">💼 Salário</option>
-                        <option value="Investimentos">📈 Investimentos</option>
-                        <option value="Outros">📦 Outros</option>
-                    </select>
+                    <select id="input-categoria"></select>
                 </div>
                 <div class="form-group">
                     <label>Data</label>
                     <input type="date" id="input-data">
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-green" onclick="salvarTransacao()">💾 Salvar</button>
+                    <button class="btn btn-green" onclick="salvarTransacao()">
+                        <i data-lucide="check"></i> Salvar
+                    </button>
                     <button class="btn btn-gray" onclick="fecharFormTransacao()">Cancelar</button>
                 </div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>📋 Todas as Transações</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Todas as Transações</span>
                 </div>
                 <div id="lista-transacoes"></div>
             </div>
@@ -644,14 +708,17 @@
 
         <!-- ===== DESPESAS FIXAS ===== -->
         <div id="aba-fixas" class="hidden">
-            <button class="btn btn-orange btn-block" onclick="abrirFormDespesaFixa()">🔁 Nova Despesa Fixa</button>
+            <button class="btn btn-amber btn-block" onclick="abrirFormDespesaFixa()">
+                <i data-lucide="repeat"></i> Nova Despesa Fixa
+            </button>
 
-            <!-- FORMULÁRIO DE DESPESA FIXA -->
-            <div id="form-despesa-fixa" class="section hidden">
-                <h3>Nova Despesa Fixa</h3>
+            <div id="form-despesa-fixa" class="card hidden">
+                <div class="card-header">
+                    <span class="card-title">Nova Despesa Fixa</span>
+                </div>
                 <div class="form-group">
                     <label>Descrição</label>
-                    <input type="text" id="input-fixa-descricao" placeholder="Ex: Aluguel, Internet, Academia...">
+                    <input type="text" id="input-fixa-descricao" placeholder="Ex: Aluguel, Internet...">
                 </div>
                 <div class="form-group">
                     <label>Valor (R$)</label>
@@ -664,26 +731,30 @@
                 <div class="form-group">
                     <label>Categoria</label>
                     <select id="input-fixa-categoria">
-                        <option value="Alimentação">🍔 Alimentação</option>
-                        <option value="Transporte">🚗 Transporte</option>
-                        <option value="Moradia">🏠 Moradia</option>
-                        <option value="Saúde">💊 Saúde</option>
-                        <option value="Educação">📚 Educação</option>
-                        <option value="Lazer">🎮 Lazer</option>
-                        <option value="Assinaturas">📺 Assinaturas</option>
-                        <option value="Outros">📦 Outros</option>
+                        <option value="Alimentação">Alimentação</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Moradia">Moradia</option>
+                        <option value="Saúde">Saúde</option>
+                        <option value="Educação">Educação</option>
+                        <option value="Lazer">Lazer</option>
+                        <option value="Assinaturas">Assinaturas</option>
+                        <option value="Outros">Outros</option>
                     </select>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-green" onclick="salvarDespesaFixa()">💾 Salvar</button>
+                    <button class="btn btn-green" onclick="salvarDespesaFixa()">
+                        <i data-lucide="check"></i> Salvar
+                    </button>
                     <button class="btn btn-gray" onclick="fecharFormDespesaFixa()">Cancelar</button>
                 </div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>🔁 Despesas Fixas</h2>
-                    <button class="btn btn-sm btn-teal" onclick="aplicarFixas()">⚡ Aplicar</button>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Despesas Fixas</span>
+                    <button class="btn btn-sm btn-teal" onclick="aplicarFixas()">
+                        <i data-lucide="zap"></i> Aplicar
+                    </button>
                 </div>
                 <div id="lista-despesas-fixas"></div>
             </div>
@@ -691,25 +762,28 @@
 
         <!-- ===== INVESTIMENTOS ===== -->
         <div id="aba-investimentos" class="hidden">
-            <button class="btn btn-teal btn-block" onclick="abrirFormInvestimento()">📈 Novo Investimento</button>
+            <button class="btn btn-teal btn-block" onclick="abrirFormInvestimento()">
+                <i data-lucide="trending-up"></i> Novo Investimento
+            </button>
 
-            <!-- FORMULÁRIO DE INVESTIMENTO -->
-            <div id="form-investimento" class="section hidden">
-                <h3>Novo Investimento</h3>
+            <div id="form-investimento" class="card hidden">
+                <div class="card-header">
+                    <span class="card-title">Novo Investimento</span>
+                </div>
                 <div class="form-group">
                     <label>Nome</label>
-                    <input type="text" id="input-inv-nome" placeholder="Ex: PETR4, CDB Banco X, Poupança...">
+                    <input type="text" id="input-inv-nome" placeholder="Ex: PETR4, CDB Banco X...">
                 </div>
                 <div class="form-group">
                     <label>Tipo</label>
                     <select id="input-inv-tipo">
-                        <option value="acao">📊 Ação</option>
-                        <option value="fii">🏢 FII</option>
-                        <option value="tesouro">🇧🇷 Tesouro Direto</option>
-                        <option value="cdb">🏦 CDB</option>
-                        <option value="poupanca">💰 Poupança</option>
-                        <option value="cripto">🪙 Cripto</option>
-                        <option value="outro">📦 Outro</option>
+                        <option value="acao">Ação</option>
+                        <option value="fii">FII</option>
+                        <option value="tesouro">Tesouro Direto</option>
+                        <option value="cdb">CDB</option>
+                        <option value="poupanca">Poupança</option>
+                        <option value="cripto">Cripto</option>
+                        <option value="outro">Outro</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -718,7 +792,7 @@
                 </div>
                 <div class="form-group">
                     <label>Corretora / Local</label>
-                    <input type="text" id="input-inv-corretora" placeholder="Ex: XP, Nubank, Binance...">
+                    <input type="text" id="input-inv-corretora" placeholder="Ex: XP, Nubank...">
                 </div>
                 <div class="form-group">
                     <label>Taxa Anual Estimada (%)</label>
@@ -730,36 +804,39 @@
                 </div>
                 <div class="form-group">
                     <label>Observações</label>
-                    <input type="text" id="input-inv-obs" placeholder="Taxas, condições, etc...">
+                    <input type="text" id="input-inv-obs" placeholder="Taxas, condições...">
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-green" onclick="salvarInvestimento()">💾 Salvar</button>
+                    <button class="btn btn-green" onclick="salvarInvestimento()">
+                        <i data-lucide="check"></i> Salvar
+                    </button>
                     <button class="btn btn-gray" onclick="fecharFormInvestimento()">Cancelar</button>
                 </div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>📈 Crescimento</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Crescimento</span>
                 </div>
                 <div id="resumo-crescimento"></div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>💼 Meus Investimentos</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Meus Investimentos</span>
                 </div>
                 <div id="lista-investimentos"></div>
             </div>
 
-            <!-- BUSCA B3 -->
-            <div class="section">
-                <div class="section-header">
-                    <h2>🔍 Buscar na B3</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Buscar na B3</span>
                 </div>
-                <div class="b3-busca">
-                    <input type="text" id="input-b3-ticker" placeholder="Ex: PETR4, VALE3, MXRF11">
-                    <button class="btn btn-blue" onclick="buscarB3()">Buscar</button>
+                <div class="b3-search">
+                    <input type="text" id="input-b3-ticker" placeholder="Ex: PETR4, MXRF11">
+                    <button class="btn btn-blue" onclick="buscarB3()">
+                        <i data-lucide="search"></i>
+                    </button>
                 </div>
                 <div id="b3-resultado"></div>
             </div>
@@ -767,11 +844,14 @@
 
         <!-- ===== DIVIDENDOS ===== -->
         <div id="aba-dividendos" class="hidden">
-            <button class="btn btn-green btn-block" onclick="abrirFormDividendo()">💵 Novo Dividendo</button>
+            <button class="btn btn-green btn-block" onclick="abrirFormDividendo()">
+                <i data-lucide="banknote"></i> Novo Dividendo
+            </button>
 
-            <!-- FORMULÁRIO DE DIVIDENDO -->
-            <div id="form-dividendo" class="section hidden">
-                <h3>Novo Dividendo Programado</h3>
+            <div id="form-dividendo" class="card hidden">
+                <div class="card-header">
+                    <span class="card-title">Novo Dividendo</span>
+                </div>
                 <div class="form-group">
                     <label>Investimento</label>
                     <select id="input-div-investimento"></select>
@@ -787,10 +867,10 @@
                 <div class="form-group">
                     <label>Frequência</label>
                     <select id="input-div-frequencia">
-                        <option value="mensal">📅 Mensal</option>
-                        <option value="trimestral">📅 Trimestral</option>
-                        <option value="semestral">📅 Semestral</option>
-                        <option value="anual">📅 Anual</option>
+                        <option value="mensal">Mensal</option>
+                        <option value="trimestral">Trimestral</option>
+                        <option value="semestral">Semestral</option>
+                        <option value="anual">Anual</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -798,21 +878,23 @@
                     <input type="number" id="input-div-dia" placeholder="Ex: 15" min="1" max="31">
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-green" onclick="salvarDividendo()">💾 Salvar</button>
+                    <button class="btn btn-green" onclick="salvarDividendo()">
+                        <i data-lucide="check"></i> Salvar
+                    </button>
                     <button class="btn btn-gray" onclick="fecharFormDividendo()">Cancelar</button>
                 </div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>📊 Projeção Anual</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Projeção Anual</span>
                 </div>
                 <div id="resumo-dividendos"></div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>💵 Dividendos Programados</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Dividendos Programados</span>
                 </div>
                 <div id="lista-dividendos"></div>
             </div>
@@ -820,14 +902,17 @@
 
         <!-- ===== METAS ===== -->
         <div id="aba-metas" class="hidden">
-            <button class="btn btn-purple btn-block" onclick="abrirFormMeta()">🎯 Nova Meta</button>
+            <button class="btn btn-violet btn-block" onclick="abrirFormMeta()">
+                <i data-lucide="target"></i> Nova Meta
+            </button>
 
-            <!-- FORMULÁRIO DE META -->
-            <div id="form-meta" class="section hidden">
-                <h3>Nova Meta Financeira</h3>
+            <div id="form-meta" class="card hidden">
+                <div class="card-header">
+                    <span class="card-title">Nova Meta</span>
+                </div>
                 <div class="form-group">
                     <label>Título</label>
-                    <input type="text" id="input-meta-titulo" placeholder="Ex: Viagem, Reserva de emergência...">
+                    <input type="text" id="input-meta-titulo" placeholder="Ex: Viagem, Reserva...">
                 </div>
                 <div class="form-group">
                     <label>Valor da Meta (R$)</label>
@@ -838,21 +923,23 @@
                     <input type="number" id="input-meta-atual" placeholder="0.00" step="0.01" min="0">
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-green" onclick="salvarMeta()">💾 Salvar</button>
+                    <button class="btn btn-green" onclick="salvarMeta()">
+                        <i data-lucide="check"></i> Salvar
+                    </button>
                     <button class="btn btn-gray" onclick="fecharFormMeta()">Cancelar</button>
                 </div>
             </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>🎯 Suas Metas</h2>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Suas Metas</span>
                 </div>
                 <div id="lista-metas"></div>
             </div>
         </div>
     </div>
 
-    <!-- TOAST -->
+    <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
@@ -862,7 +949,6 @@
         const tgUser = Telegram.WebApp.initDataUnsafe?.user;
         const userId = tgUser ? tgUser.id : 12345678;
 
-        // Estado global
         let mesAtual = new Date().getMonth() + 1;
         let anoAtual = new Date().getFullYear();
         let tipoTransacaoForm = 'despesa';
@@ -872,6 +958,9 @@
             'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
             'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
         ];
+
+        // Inicializa ícones Lucide
+        lucide.createIcons();
 
         // --- UTILITÁRIOS ---
         function formatarMoeda(valor) {
@@ -901,19 +990,14 @@
 
         function mudarMes(delta) {
             mesAtual += delta;
-            if (mesAtual < 1) {
-                mesAtual = 12;
-                anoAtual--;
-            } else if (mesAtual > 12) {
-                mesAtual = 1;
-                anoAtual++;
-            }
+            if (mesAtual < 1) { mesAtual = 12; anoAtual--; }
+            else if (mesAtual > 12) { mesAtual = 1; anoAtual++; }
             atualizarLabelMes();
             carregarDashboard();
             carregarTransacoes();
         }
 
-        // --- NAVEGAÇÃO DE ABAS ---
+        // --- NAVEGAÇÃO ---
         function mostrarAba(aba) {
             document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
             const abas = ['dashboard', 'transacoes', 'fixas', 'investimentos', 'dividendos', 'metas'];
@@ -946,22 +1030,19 @@
                 const transacoes = await transacoesRes.json();
                 const previsao = await previsaoRes.json();
 
-                // Atualiza cards de resumo
                 const saldoEl = document.getElementById('resumo-saldo');
                 saldoEl.textContent = formatarMoeda(resumo.saldo);
-                saldoEl.className = 'resumo-valor ' + (resumo.saldo >= 0 ? 'positivo' : 'negativo');
+                saldoEl.style.color = 'white';
 
                 document.getElementById('resumo-receitas').textContent = formatarMoeda(resumo.total_receitas);
                 document.getElementById('resumo-despesas').textContent = formatarMoeda(resumo.total_despesas);
 
-                // Gráfico de categorias
                 renderizarGrafico(categorias);
 
-                // Lista de categorias
                 const listaCategorias = document.getElementById('lista-categorias');
                 const categoriasArray = Object.entries(categorias);
                 if (categoriasArray.length === 0) {
-                    listaCategorias.innerHTML = '<div class="empty-state">Nenhuma despesa neste mês.</div>';
+                    listaCategorias.innerHTML = '<div class="empty"><i data-lucide="pie-chart"></i><br>Nenhuma despesa neste mês.</div>';
                 } else {
                     const totalDespesas = categoriasArray.reduce((sum, [, v]) => sum + v, 0);
                     listaCategorias.innerHTML = categoriasArray.map(([cat, valor]) => {
@@ -972,57 +1053,58 @@
                                     <span>${cat}</span>
                                     <span>${formatarMoeda(valor)} (${pct}%)</span>
                                 </div>
-                                <div class="progress-bar">
+                                <div class="progress">
                                     <div class="progress-fill" style="width: ${pct}%; background-color: ${getCorCategoria(cat)};"></div>
                                 </div>
                             </div>
                         `;
                     }).join('');
                 }
+                lucide.createIcons();
 
-                // Previsão de despesas
                 const previsaoEl = document.getElementById('previsao-despesas');
                 if (previsao.despesas_pendentes && previsao.despesas_pendentes.length > 0) {
                     previsaoEl.innerHTML = `
                         <div style="margin-bottom: 8px; font-size: 0.85rem;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span>💰 Já registrado:</span>
+                                <span>Já registrado:</span>
                                 <strong>${formatarMoeda(previsao.total_registrado)}</strong>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span>🔮 Pendente (fixas):</span>
-                                <strong style="color: var(--orange);">${formatarMoeda(previsao.total_pendente)}</strong>
+                                <span>Pendente (fixas):</span>
+                                <strong style="color: var(--amber);">${formatarMoeda(previsao.total_pendente)}</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.1);">
+                            <div style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid var(--border);">
                                 <span><strong>Total previsto:</strong></span>
                                 <strong>${formatarMoeda(previsao.total_previsao)}</strong>
                             </div>
                         </div>
-                        <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 6px;">
+                        <div style="font-size: 0.75rem; color: var(--muted); margin-top: 6px;">
                             ${previsao.despesas_pendentes.map(d => 
                                 `• ${d.descricao} - ${formatarMoeda(d.valor)} (dia ${d.dia_vencimento})`
                             ).join('<br>')}
                         </div>
                     `;
                 } else {
-                    previsaoEl.innerHTML = '<div class="empty-state">Nenhuma despesa fixa pendente.</div>';
+                    previsaoEl.innerHTML = '<div class="empty"><i data-lucide="calendar-check"></i><br>Nenhuma despesa fixa pendente.</div>';
+                    lucide.createIcons();
                 }
 
-                // Últimas transações
                 const ultimas = document.getElementById('ultimas-transacoes');
                 if (transacoes.transacoes && transacoes.transacoes.length > 0) {
                     const recentes = transacoes.transacoes.slice(0, 5);
                     ultimas.innerHTML = recentes.map(t => `
-                        <div class="transacao-item">
-                            <div class="transacao-info">
-                                <div class="transacao-descricao">${t.descricao}</div>
-                                <div class="transacao-categoria">${t.categoria} • ${formatarData(t.data)}</div>
+                        <div class="list-item">
+                            <div class="item-info">
+                                <div class="item-title">${t.descricao}</div>
+                                <div class="item-subtitle">${t.categoria} • ${formatarData(t.data)}</div>
                             </div>
-                            <div class="transacao-valor ${t.tipo}">${t.tipo === 'receita' ? '+' : '-'}${formatarMoeda(t.valor)}</div>
+                            <div class="item-value ${t.tipo}">${t.tipo === 'receita' ? '+' : '-'}${formatarMoeda(t.valor)}</div>
                         </div>
                     `).join('');
                 } else {
-                    ultimas.innerHTML = '<div class="empty-state">Nenhuma transação neste mês.</div>';
+                    ultimas.innerHTML = '<div class="empty"><i data-lucide="inbox"></i><br>Nenhuma transação neste mês.</div>';
+                    lucide.createIcons();
                 }
             } catch (err) {
                 console.error('Erro ao carregar dashboard:', err);
@@ -1032,27 +1114,25 @@
 
         function getCorCategoria(categoria) {
             const cores = {
-                'Alimentação': '#e74c3c',
-                'Transporte': '#3498db',
-                'Moradia': '#9b59b6',
-                'Saúde': '#2ecc71',
-                'Educação': '#f39c12',
-                'Lazer': '#e67e22',
-                'Salário': '#27ae60',
-                'Investimentos': '#1abc9c',
-                'Assinaturas': '#e84393',
-                'Outros': '#7f8c8d'
+                'Alimentação': '#ef4444',
+                'Transporte': '#3b82f6',
+                'Moradia': '#8b5cf6',
+                'Saúde': '#10b981',
+                'Educação': '#f59e0b',
+                'Lazer': '#f97316',
+                'Salário': '#10b981',
+                'Investimentos': '#14b8a6',
+                'Assinaturas': '#ec4899',
+                'Outros': '#94a3b8'
             };
-            return cores[categoria] || '#7f8c8d';
+            return cores[categoria] || '#94a3b8';
         }
 
         function renderizarGrafico(categorias) {
             const ctx = document.getElementById('grafico-categorias').getContext('2d');
             const categoriasArray = Object.entries(categorias);
 
-            if (graficoCategorias) {
-                graficoCategorias.destroy();
-            }
+            if (graficoCategorias) graficoCategorias.destroy();
 
             if (categoriasArray.length === 0) {
                 ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -1067,7 +1147,7 @@
                         data: categoriasArray.map(([, valor]) => valor),
                         backgroundColor: categoriasArray.map(([cat]) => getCorCategoria(cat)),
                         borderWidth: 2,
-                        borderColor: 'var(--card-bg)'
+                        borderColor: 'var(--surface)'
                     }]
                 },
                 options: {
@@ -1078,7 +1158,7 @@
                             position: 'bottom',
                             labels: {
                                 font: { size: 10 },
-                                boxWidth: 12,
+                                boxWidth: 10,
                                 padding: 8
                             }
                         }
@@ -1096,20 +1176,23 @@
                 const lista = document.getElementById('lista-transacoes');
                 if (result.transacoes && result.transacoes.length > 0) {
                     lista.innerHTML = result.transacoes.map(t => `
-                        <div class="transacao-item">
-                            <div class="transacao-info">
-                                <div class="transacao-descricao">${t.descricao}</div>
-                                <div class="transacao-categoria">${t.categoria} • ${formatarData(t.data)}</div>
+                        <div class="list-item">
+                            <div class="item-info">
+                                <div class="item-title">${t.descricao}</div>
+                                <div class="item-subtitle">${t.categoria} • ${formatarData(t.data)}</div>
                             </div>
-                            <div class="transacao-valor ${t.tipo}">${t.tipo === 'receita' ? '+' : '-'}${formatarMoeda(t.valor)}</div>
-                            <div class="transacao-acoes">
-                                <button class="btn btn-sm btn-red" onclick="deletarTransacao('${t.id}')">🗑️</button>
+                            <div class="item-value ${t.tipo}">${t.tipo === 'receita' ? '+' : '-'}${formatarMoeda(t.valor)}</div>
+                            <div class="item-actions">
+                                <button class="icon-btn danger" onclick="deletarTransacao('${t.id}')">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
                             </div>
                         </div>
                     `).join('');
                 } else {
-                    lista.innerHTML = '<div class="empty-state">Nenhuma transação neste mês.<br>Clique em ➕ Receita ou ➖ Despesa para adicionar.</div>';
+                    lista.innerHTML = '<div class="empty"><i data-lucide="inbox"></i><br>Nenhuma transação neste mês.</div>';
                 }
+                lucide.createIcons();
             } catch (err) {
                 console.error('Erro ao carregar transações:', err);
                 mostrarToast('Erro ao carregar transações');
@@ -1119,7 +1202,7 @@
         function abrirFormTransacao(tipo) {
             tipoTransacaoForm = tipo;
             document.getElementById('form-transacao-titulo').textContent =
-                tipo === 'receita' ? '➕ Nova Receita' : '➖ Nova Despesa';
+                tipo === 'receita' ? 'Nova Receita' : 'Nova Despesa';
             document.getElementById('input-descricao').value = '';
             document.getElementById('input-valor').value = '';
             document.getElementById('input-data').value = new Date().toISOString().split('T')[0];
@@ -1127,21 +1210,21 @@
             const select = document.getElementById('input-categoria');
             select.innerHTML = tipo === 'receita'
                 ? `
-                    <option value="Salário">💼 Salário</option>
-                    <option value="Investimentos">📈 Investimentos</option>
-                    <option value="Freelance">💻 Freelance</option>
-                    <option value="Dividendos">💵 Dividendos</option>
-                    <option value="Outros">📦 Outros</option>
+                    <option value="Salário">Salário</option>
+                    <option value="Investimentos">Investimentos</option>
+                    <option value="Freelance">Freelance</option>
+                    <option value="Dividendos">Dividendos</option>
+                    <option value="Outros">Outros</option>
                 `
                 : `
-                    <option value="Alimentação">🍔 Alimentação</option>
-                    <option value="Transporte">🚗 Transporte</option>
-                    <option value="Moradia">🏠 Moradia</option>
-                    <option value="Saúde">💊 Saúde</option>
-                    <option value="Educação">📚 Educação</option>
-                    <option value="Lazer">🎮 Lazer</option>
-                    <option value="Assinaturas">📺 Assinaturas</option>
-                    <option value="Outros">📦 Outros</option>
+                    <option value="Alimentação">Alimentação</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Moradia">Moradia</option>
+                    <option value="Saúde">Saúde</option>
+                    <option value="Educação">Educação</option>
+                    <option value="Lazer">Lazer</option>
+                    <option value="Assinaturas">Assinaturas</option>
+                    <option value="Outros">Outros</option>
                 `;
 
             document.getElementById('form-transacao').classList.remove('hidden');
@@ -1177,12 +1260,12 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('✅ Transação salva!');
+                    mostrarToast('Transação salva!');
                     fecharFormTransacao();
                     carregarTransacoes();
                     carregarDashboard();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao salvar transação:', err);
@@ -1191,7 +1274,7 @@
         }
 
         async function deletarTransacao(transacaoId) {
-            if (!confirm('Tem certeza que deseja excluir esta transação?')) return;
+            if (!confirm('Excluir esta transação?')) return;
 
             try {
                 const response = await fetch(`/api/financas/${userId}/${transacaoId}`, {
@@ -1199,15 +1282,14 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('🗑️ Transação excluída!');
+                    mostrarToast('Transação excluída!');
                     carregarTransacoes();
                     carregarDashboard();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao excluir transação:', err);
-                mostrarToast('Erro ao excluir transação');
             }
         }
 
@@ -1220,23 +1302,30 @@
                 const lista = document.getElementById('lista-despesas-fixas');
                 if (result.despesas_fixas && result.despesas_fixas.length > 0) {
                     lista.innerHTML = result.despesas_fixas.map(df => `
-                        <div class="fixa-item">
-                            <div class="fixa-info">
-                                <div class="fixa-descricao">${df.descricao}
-                                    <span class="badge ${df.ativa ? 'badge-ativa' : 'badge-inativa'}">${df.ativa ? 'Ativa' : 'Pausada'}</span>
+                        <div class="list-item">
+                            <div class="item-info">
+                                <div class="item-title">${df.descricao}
+                                    <span class="badge ${df.ativa ? 'badge-active' : 'badge-inactive'}">
+                                        ${df.ativa ? '<i data-lucide="check-circle"></i> Ativa' : '<i data-lucide="pause-circle"></i> Pausada'}
+                                    </span>
                                 </div>
-                                <div class="fixa-detalhes">${df.categoria} • Vence dia ${df.dia_vencimento}</div>
+                                <div class="item-subtitle">${df.categoria} • Vence dia ${df.dia_vencimento}</div>
                             </div>
-                            <div class="fixa-valor">${formatarMoeda(df.valor)}</div>
-                            <div class="transacao-acoes">
-                                <button class="btn btn-sm ${df.ativa ? 'btn-orange' : 'btn-green'}" onclick="toggleDespesaFixa('${df.id}')">${df.ativa ? '⏸️' : '▶️'}</button>
-                                <button class="btn btn-sm btn-red" onclick="deletarDespesaFixa('${df.id}')">🗑️</button>
+                            <div class="item-value despesa">${formatarMoeda(df.valor)}</div>
+                            <div class="item-actions">
+                                <button class="icon-btn" onclick="toggleDespesaFixa('${df.id}')">
+                                    <i data-lucide="${df.ativa ? 'pause' : 'play'}"></i>
+                                </button>
+                                <button class="icon-btn danger" onclick="deletarDespesaFixa('${df.id}')">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
                             </div>
                         </div>
                     `).join('');
                 } else {
-                    lista.innerHTML = '<div class="empty-state">Nenhuma despesa fixa cadastrada.<br>Clique em 🔁 Nova Despesa Fixa para começar!</div>';
+                    lista.innerHTML = '<div class="empty"><i data-lucide="repeat"></i><br>Nenhuma despesa fixa cadastrada.</div>';
                 }
+                lucide.createIcons();
             } catch (err) {
                 console.error('Erro ao carregar despesas fixas:', err);
                 mostrarToast('Erro ao carregar despesas fixas');
@@ -1279,16 +1368,15 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('✅ Despesa fixa salva!');
+                    mostrarToast('Despesa fixa salva!');
                     fecharFormDespesaFixa();
                     carregarDespesasFixas();
                     carregarDashboard();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao salvar despesa fixa:', err);
-                mostrarToast('Erro ao salvar despesa fixa');
             }
         }
 
@@ -1301,7 +1389,7 @@
                 if (result.status === 'success') {
                     carregarDespesasFixas();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao alternar despesa fixa:', err);
@@ -1309,7 +1397,7 @@
         }
 
         async function deletarDespesaFixa(despesaId) {
-            if (!confirm('Tem certeza que deseja excluir esta despesa fixa?')) return;
+            if (!confirm('Excluir esta despesa fixa?')) return;
 
             try {
                 const response = await fetch(`/api/financas/${userId}/despesas-fixas/${despesaId}`, {
@@ -1317,11 +1405,11 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('🗑️ Despesa fixa excluída!');
+                    mostrarToast('Despesa fixa excluída!');
                     carregarDespesasFixas();
                     carregarDashboard();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao excluir despesa fixa:', err);
@@ -1329,7 +1417,7 @@
         }
 
         async function aplicarFixas() {
-            if (!confirm('Aplicar as despesas fixas pendentes como transações deste mês?')) return;
+            if (!confirm('Aplicar despesas fixas pendentes como transações?')) return;
 
             try {
                 const response = await fetch(`/api/financas/${userId}/aplicar-fixas?mes=${mesAtual}&ano=${anoAtual}`, {
@@ -1337,12 +1425,12 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast(`⚡ ${result.aplicadas} despesa(s) fixa(s) aplicada(s)!`);
+                    mostrarToast(`${result.aplicadas} despesa(s) aplicada(s)!`);
                     carregarDespesasFixas();
                     carregarDashboard();
                     carregarTransacoes();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao aplicar despesas fixas:', err);
@@ -1358,28 +1446,31 @@
                 const lista = document.getElementById('lista-investimentos');
                 if (result.investimentos && result.investimentos.length > 0) {
                     lista.innerHTML = result.investimentos.map(inv => `
-                        <div class="investimento-item">
-                            <div class="investimento-header">
+                        <div class="invest-item">
+                            <div class="invest-header">
                                 <div>
-                                    <div class="investimento-nome">${inv.nome}</div>
-                                    <div class="investimento-tipo">${getTipoInvestimentoLabel(inv.tipo)} • ${inv.corretora || 'Sem corretora'}</div>
+                                    <div class="invest-name">${inv.nome}</div>
+                                    <div class="invest-type">${getTipoInvestimentoLabel(inv.tipo)} • ${inv.corretora || 'Sem corretora'}</div>
                                 </div>
-                                <div class="transacao-acoes">
-                                    <button class="btn btn-sm btn-red" onclick="deletarInvestimento('${inv.id}')">🗑️</button>
+                                <div class="item-actions">
+                                    <button class="icon-btn danger" onclick="deletarInvestimento('${inv.id}')">
+                                        <i data-lucide="trash-2"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="investimento-valores">
+                            <div class="invest-values">
                                 <span>Investido: <strong>${formatarMoeda(inv.valor_investido)}</strong></span>
                                 <span>Taxa: <strong>${inv.taxa_anual}% a.a.</strong></span>
                             </div>
-                            <div style="font-size: 0.75rem; opacity: 0.6;">
+                            <div style="font-size: 0.75rem; color: var(--muted);">
                                 Início: ${formatarData(inv.data_inicio)} ${inv.observacoes ? `• ${inv.observacoes}` : ''}
                             </div>
                         </div>
                     `).join('');
                 } else {
-                    lista.innerHTML = '<div class="empty-state">Nenhum investimento cadastrado.<br>Clique em 📈 Novo Investimento para começar!</div>';
+                    lista.innerHTML = '<div class="empty"><i data-lucide="trending-up"></i><br>Nenhum investimento cadastrado.</div>';
                 }
+                lucide.createIcons();
             } catch (err) {
                 console.error('Erro ao carregar investimentos:', err);
                 mostrarToast('Erro ao carregar investimentos');
@@ -1393,26 +1484,26 @@
 
                 const resumo = document.getElementById('resumo-crescimento');
                 if (result.total_investido > 0) {
-                    const pctClass = result.total_crescimento >= 0 ? 'crescimento-positivo' : 'crescimento-negativo';
+                    const pctClass = result.total_crescimento >= 0 ? 'growth-pos' : 'growth-neg';
                     resumo.innerHTML = `
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem;">
-                            <span>💰 Total investido:</span>
+                            <span>Total investido:</span>
                             <strong>${formatarMoeda(result.total_investido)}</strong>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem;">
-                            <span>📈 Valor atual estimado:</span>
+                            <span>Valor atual estimado:</span>
                             <strong>${formatarMoeda(result.total_atual_estimado)}</strong>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.1); font-size: 0.85rem;">
+                        <div style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid var(--border); font-size: 0.85rem;">
                             <span><strong>Crescimento:</strong></span>
                             <strong class="${pctClass}">${formatarMoeda(result.total_crescimento)} (${result.total_crescimento_percentual}%)</strong>
                         </div>
                         ${result.investimentos && result.investimentos.length > 0 ? `
-                            <div style="margin-top: 10px; font-size: 0.75rem; opacity: 0.7;">
+                            <div style="margin-top: 10px; font-size: 0.75rem; color: var(--muted);">
                                 ${result.investimentos.map(inv => `
                                     <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                                         <span>${inv.nome}</span>
-                                        <span class="${inv.crescimento >= 0 ? 'crescimento-positivo' : 'crescimento-negativo'}">
+                                        <span class="${inv.crescimento >= 0 ? 'growth-pos' : 'growth-neg'}">
                                             ${formatarMoeda(inv.crescimento)} (${inv.crescimento_percentual}%)
                                         </span>
                                     </div>
@@ -1421,7 +1512,8 @@
                         ` : ''}
                     `;
                 } else {
-                    resumo.innerHTML = '<div class="empty-state">Adicione investimentos para ver o crescimento.</div>';
+                    resumo.innerHTML = '<div class="empty"><i data-lucide="line-chart"></i><br>Adicione investimentos para ver o crescimento.</div>';
+                    lucide.createIcons();
                 }
             } catch (err) {
                 console.error('Erro ao carregar crescimento:', err);
@@ -1430,13 +1522,13 @@
 
         function getTipoInvestimentoLabel(tipo) {
             const labels = {
-                'acao': '📊 Ação',
-                'fii': '🏢 FII',
-                'tesouro': '🇧🇷 Tesouro',
-                'cdb': '🏦 CDB',
-                'poupanca': '💰 Poupança',
-                'cripto': '🪙 Cripto',
-                'outro': '📦 Outro'
+                'acao': 'Ação',
+                'fii': 'FII',
+                'tesouro': 'Tesouro',
+                'cdb': 'CDB',
+                'poupanca': 'Poupança',
+                'cripto': 'Cripto',
+                'outro': 'Outro'
             };
             return labels[tipo] || tipo;
         }
@@ -1486,21 +1578,20 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('✅ Investimento salvo!');
+                    mostrarToast('Investimento salvo!');
                     fecharFormInvestimento();
                     carregarInvestimentos();
                     carregarCrescimento();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao salvar investimento:', err);
-                mostrarToast('Erro ao salvar investimento');
             }
         }
 
         async function deletarInvestimento(investimentoId) {
-            if (!confirm('Tem certeza que deseja excluir este investimento?')) return;
+            if (!confirm('Excluir este investimento?')) return;
 
             try {
                 const response = await fetch(`/api/financas/${userId}/investimentos/${investimentoId}`, {
@@ -1508,11 +1599,11 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('🗑️ Investimento excluído!');
+                    mostrarToast('Investimento excluído!');
                     carregarInvestimentos();
                     carregarCrescimento();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao excluir investimento:', err);
@@ -1528,31 +1619,34 @@
             }
 
             const resultadoEl = document.getElementById('b3-resultado');
-            resultadoEl.innerHTML = '<div class="empty-state">Buscando cotação...</div>';
+            resultadoEl.innerHTML = '<div class="empty">Buscando cotação...</div>';
 
             try {
                 const response = await fetch(`/api/b3/cotacao/${ticker}`);
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    const variacaoClass = result.variacao_percentual >= 0 ? 'crescimento-positivo' : 'crescimento-negativo';
+                    const variacaoClass = result.variacao_percentual >= 0 ? 'trend-up' : 'trend-down';
                     resultadoEl.innerHTML = `
-                        <div class="b3-resultado">
-                            <div class="b3-ticker">${result.ticker}</div>
-                            <div class="b3-preco">${formatarMoeda(result.preco_atual)}</div>
-                            <div class="b3-info">
+                        <div class="b3-result">
+                            <div class="b3-ticker">
+                                <i data-lucide="line-chart"></i> ${result.ticker}
+                            </div>
+                            <div class="b3-price">${formatarMoeda(result.preco_atual)}</div>
+                            <div class="b3-meta">
                                 <span class="${variacaoClass}">${result.variacao_percentual >= 0 ? '▲' : '▼'} ${result.variacao_percentual}%</span>
-                                <span>💵 Últ. dividendo: ${formatarMoeda(result.ultimo_dividendo)}</span>
-                                <span>📊 DY: ${result.dividend_yield}%</span>
+                                <span>Últ. dividendo: ${formatarMoeda(result.ultimo_dividendo)}</span>
+                                <span>DY: ${result.dividend_yield}%</span>
                             </div>
                         </div>
                     `;
+                    lucide.createIcons();
                 } else {
-                    resultadoEl.innerHTML = `<div class="empty-state">❌ ${result.message}</div>`;
+                    resultadoEl.innerHTML = `<div class="empty">${result.message}</div>`;
                 }
             } catch (err) {
                 console.error('Erro ao buscar B3:', err);
-                resultadoEl.innerHTML = '<div class="empty-state">Erro ao buscar cotação.</div>';
+                resultadoEl.innerHTML = '<div class="empty">Erro ao buscar cotação.</div>';
             }
         }
 
@@ -1568,10 +1662,10 @@
                         `<option value="${inv.id}">${inv.nome}</option>`
                     ).join('');
                 } else {
-                    select.innerHTML = '<option value="">Nenhum investimento cadastrado</option>';
+                    select.innerHTML = '<option value="">Nenhum investimento</option>';
                 }
             } catch (err) {
-                console.error('Erro ao carregar investimentos para select:', err);
+                console.error('Erro ao carregar investimentos:', err);
             }
         }
 
@@ -1583,20 +1677,23 @@
                 const lista = document.getElementById('lista-dividendos');
                 if (result.dividendos && result.dividendos.length > 0) {
                     lista.innerHTML = result.dividendos.map(div => `
-                        <div class="dividendo-item">
-                            <div class="dividendo-info">
-                                <div class="dividendo-descricao">${div.descricao}</div>
-                                <div class="dividendo-detalhes">${div.investimento_nome} • ${getFrequenciaLabel(div.frequencia)} • Dia ${div.dia_recebimento}</div>
+                        <div class="list-item">
+                            <div class="item-info">
+                                <div class="item-title">${div.descricao}</div>
+                                <div class="item-subtitle">${div.investimento_nome} • ${getFrequenciaLabel(div.frequencia)} • Dia ${div.dia_recebimento}</div>
                             </div>
-                            <div class="dividendo-valor">${formatarMoeda(div.valor_estimado)}</div>
-                            <div class="transacao-acoes">
-                                <button class="btn btn-sm btn-red" onclick="deletarDividendo('${div.id}')">🗑️</button>
+                            <div class="item-value receita">${formatarMoeda(div.valor_estimado)}</div>
+                            <div class="item-actions">
+                                <button class="icon-btn danger" onclick="deletarDividendo('${div.id}')">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
                             </div>
                         </div>
                     `).join('');
                 } else {
-                    lista.innerHTML = '<div class="empty-state">Nenhum dividendo programado.<br>Clique em 💵 Novo Dividendo para começar!</div>';
+                    lista.innerHTML = '<div class="empty"><i data-lucide="banknote"></i><br>Nenhum dividendo programado.</div>';
                 }
+                lucide.createIcons();
             } catch (err) {
                 console.error('Erro ao carregar dividendos:', err);
                 mostrarToast('Erro ao carregar dividendos');
@@ -1612,14 +1709,14 @@
                 if (result.total_anual_estimado > 0) {
                     resumo.innerHTML = `
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem;">
-                            <span>📅 Total anual estimado:</span>
+                            <span>Total anual estimado:</span>
                             <strong>${formatarMoeda(result.total_anual_estimado)}</strong>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem;">
-                            <span>📊 Média mensal:</span>
+                            <span>Média mensal:</span>
                             <strong>${formatarMoeda(result.media_mensal)}</strong>
                         </div>
-                        <div style="font-size: 0.75rem; opacity: 0.7;">
+                        <div style="font-size: 0.75rem; color: var(--muted);">
                             ${result.projecao.map(m => `
                                 <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                                     <span>${MESES[m.mes - 1]} ${m.ano}</span>
@@ -1629,7 +1726,8 @@
                         </div>
                     `;
                 } else {
-                    resumo.innerHTML = '<div class="empty-state">Adicione dividendos para ver a projeção.</div>';
+                    resumo.innerHTML = '<div class="empty"><i data-lucide="calendar"></i><br>Adicione dividendos para ver a projeção.</div>';
+                    lucide.createIcons();
                 }
             } catch (err) {
                 console.error('Erro ao carregar projeção:', err);
@@ -1684,21 +1782,20 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('✅ Dividendo salvo!');
+                    mostrarToast('Dividendo salvo!');
                     fecharFormDividendo();
                     carregarDividendos();
                     carregarProjecaoDividendos();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao salvar dividendo:', err);
-                mostrarToast('Erro ao salvar dividendo');
             }
         }
 
         async function deletarDividendo(dividendoId) {
-            if (!confirm('Tem certeza que deseja excluir este dividendo?')) return;
+            if (!confirm('Excluir este dividendo?')) return;
 
             try {
                 const response = await fetch(`/api/financas/${userId}/dividendos/${dividendoId}`, {
@@ -1706,11 +1803,11 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('🗑️ Dividendo excluído!');
+                    mostrarToast('Dividendo excluído!');
                     carregarDividendos();
                     carregarProjecaoDividendos();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao excluir dividendo:', err);
@@ -1727,29 +1824,34 @@
                 if (result.metas && result.metas.length > 0) {
                     lista.innerHTML = result.metas.map(m => {
                         const pct = m.percentual || 0;
-                        const cor = pct >= 100 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--blue)';
+                        const cor = pct >= 100 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--blue)';
                         return `
-                            <div class="meta-item">
-                                <div class="meta-header">
-                                    <span class="meta-titulo">${m.titulo}</span>
-                                    <span class="meta-valores">${formatarMoeda(m.valor_atual)} / ${formatarMoeda(m.valor_meta)}</span>
+                            <div class="invest-item">
+                                <div class="invest-header">
+                                    <div class="invest-name">${m.titulo}</div>
+                                    <div class="item-actions">
+                                        <button class="icon-btn" onclick="atualizarMeta('${m.id}')">
+                                            <i data-lucide="pencil"></i>
+                                        </button>
+                                        <button class="icon-btn danger" onclick="deletarMeta('${m.id}')">
+                                            <i data-lucide="trash-2"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="progress-bar">
+                                <div class="invest-values">
+                                    <span>${formatarMoeda(m.valor_atual)} / ${formatarMoeda(m.valor_meta)}</span>
+                                    <span>${pct >= 100 ? '🎉 Atingida!' : `${pct}%`}</span>
+                                </div>
+                                <div class="progress">
                                     <div class="progress-fill" style="width: ${Math.min(pct, 100)}%; background-color: ${cor};"></div>
-                                </div>
-                                <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px;">
-                                    ${pct >= 100 ? '🎉 Meta atingida!' : `${pct}% concluída`}
-                                </div>
-                                <div class="meta-acoes">
-                                    <button class="btn btn-sm btn-blue" onclick="atualizarMeta('${m.id}')">💰 Atualizar</button>
-                                    <button class="btn btn-sm btn-red" onclick="deletarMeta('${m.id}')">🗑️ Excluir</button>
                                 </div>
                             </div>
                         `;
                     }).join('');
                 } else {
-                    lista.innerHTML = '<div class="empty-state">Nenhuma meta cadastrada.<br>Clique em 🎯 Nova Meta para começar!</div>';
+                    lista.innerHTML = '<div class="empty"><i data-lucide="target"></i><br>Nenhuma meta cadastrada.</div>';
                 }
+                lucide.createIcons();
             } catch (err) {
                 console.error('Erro ao carregar metas:', err);
                 mostrarToast('Erro ao carregar metas');
@@ -1790,15 +1892,14 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('✅ Meta criada!');
+                    mostrarToast('Meta criada!');
                     fecharFormMeta();
                     carregarMetas();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao salvar meta:', err);
-                mostrarToast('Erro ao salvar meta');
             }
         }
 
@@ -1821,19 +1922,18 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('💰 Meta atualizada!');
+                    mostrarToast('Meta atualizada!');
                     carregarMetas();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao atualizar meta:', err);
-                mostrarToast('Erro ao atualizar meta');
             }
         }
 
         async function deletarMeta(metaId) {
-            if (!confirm('Tem certeza que deseja excluir esta meta?')) return;
+            if (!confirm('Excluir esta meta?')) return;
 
             try {
                 const response = await fetch(`/api/financas/${userId}/metas/${metaId}`, {
@@ -1841,14 +1941,13 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('🗑️ Meta excluída!');
+                    mostrarToast('Meta excluída!');
                     carregarMetas();
                 } else {
-                    mostrarToast('❌ ' + result.message);
+                    mostrarToast(result.message);
                 }
             } catch (err) {
                 console.error('Erro ao excluir meta:', err);
-                mostrarToast('Erro ao excluir meta');
             }
         }
 

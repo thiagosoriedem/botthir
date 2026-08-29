@@ -1,162 +1,438 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Memory Flashcards</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      margin: 0;
-      padding: 16px;
-      background-color: #0f172a;
-      color: #f8fafc;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 90vh;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 16px;
-    }
-    .score-board {
-      display: flex;
-      gap: 20px;
-      font-size: 16px;
-      font-weight: bold;
-      color: #38bdf8;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      width: 100%;
-      max-width: 360px;
-    }
-    .card {
-      height: 90px;
-      background: #1e293b;
-      border: 2px solid #334155;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px;
-      text-align: center;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.2s ease;
-    }
-    .card.selected {
-      border-color: #38bdf8;
-      background: #0284c7;
-    }
-    .card.matched {
-      border-color: #22c55e;
-      background: #15803d;
-      opacity: 0.6;
-      cursor: default;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Jogo da Memória</title>
+    <!-- SDK do Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: var(--tg-theme-bg-color, #f8fafc);
+            --surface: var(--tg-theme-secondary-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #0f172a);
+            --muted: #94a3b8;
+            --primary: var(--tg-theme-button-color, #6366f1);
+            --primary-text: var(--tg-theme-button-text-color, #ffffff);
+            --green: #10b981;
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --blue: #3b82f6;
+            --border: #e2e8f0;
+            --radius: 16px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 16px;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 480px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 4px 0;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Score Board */
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .score-item {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 10px 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(226, 232, 240, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .score-item svg {
+            width: 16px;
+            height: 16px;
+            color: var(--primary);
+        }
+
+        .score-item.timer {
+            color: var(--amber);
+        }
+
+        .score-item.timer svg {
+            color: var(--amber);
+        }
+
+        .score-item.pairs {
+            color: var(--green);
+        }
+
+        .score-item.pairs svg {
+            color: var(--green);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .card {
+            height: 100px;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow);
+            color: var(--text);
+        }
+
+        .card:active {
+            transform: scale(0.97);
+        }
+
+        .card.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: var(--primary-text);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .card.matched {
+            border-color: var(--green);
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--green);
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        .card.matched:active {
+            transform: none;
+        }
+
+        /* Win Overlay */
+        .win-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .win-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .win-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green), #14b8a6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+            animation: pop 0.5s ease;
+        }
+
+        .win-icon svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        .win-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .win-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: white;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--primary);
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
 </head>
+
 <body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">Jogo da Memória</div>
+            <div class="header-icon">
+                <i data-lucide="brain"></i>
+            </div>
+        </div>
 
-  <div class="header">
-    <h2 style="margin:0 0 8px 0;">⚡ Associação Rápida</h2>
-    <div class="score-board">
-      <span id="timer">Tempo: 30s</span>
-      <span id="pairs">Pares: 0/3</span>
+        <!-- Score Board -->
+        <div class="score-board">
+            <div class="score-item timer">
+                <i data-lucide="timer"></i>
+                <span id="timer">30s</span>
+            </div>
+            <div class="score-item pairs">
+                <i data-lucide="layers"></i>
+                <span id="pairs">0/3</span>
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="grid" id="grid"></div>
     </div>
-  </div>
 
-  <div class="grid" id="grid"></div>
+    <!-- Win Overlay -->
+    <div class="win-overlay" id="win-overlay">
+        <div class="win-icon">
+            <i data-lucide="trophy"></i>
+        </div>
+        <div class="win-title">Vitória!</div>
+        <div class="win-subtitle" id="win-time">Você completou o jogo!</div>
+        <button class="btn" onclick="reiniciarJogo()">
+            <i data-lucide="rotate-ccw"></i> Jogar Novamente
+        </button>
+    </div>
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
 
-    // Cards do banco (Perguntas e Respostas correspondentes)
-    const cardPairs = [
-      { id: 1, text: "🐍 Python", type: "Q" },
-      { id: 1, text: "Linguagem interpretada", type: "A" },
-      { id: 2, text: "🌐 HTML", type: "Q" },
-      { id: 2, text: "Linguagem de marcação", type: "A" },
-      { id: 3, text: "⚡ Firebase", type: "Q" },
-      { id: 3, text: "Banco de dados NoSQL", type: "A" }
-    ];
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
 
-    let selectedCards = [];
-    let matchedPairs = 0;
-    let timeLeft = 30;
-    let timerInterval;
+        // Inicializa ícones Lucide
+        lucide.createIcons();
 
-    // Embaralha as cartas
-    const shuffled = cardPairs.sort(() => Math.random() - 0.5);
+        // Cards do banco (Perguntas e Respostas correspondentes)
+        const cardPairs = [
+            { id: 1, text: "Python", type: "Q" },
+            { id: 1, text: "Linguagem interpretada", type: "A" },
+            { id: 2, text: "HTML", type: "Q" },
+            { id: 2, text: "Linguagem de marcação", type: "A" },
+            { id: 3, text: "Firebase", type: "Q" },
+            { id: 3, text: "Banco de dados NoSQL", type: "A" }
+        ];
 
-    function renderGrid() {
-      const grid = document.getElementById("grid");
-      grid.innerHTML = "";
-      shuffled.forEach((card, index) => {
-        const div = document.createElement("div");
-        div.className = "card";
-        div.innerText = card.text;
-        div.onclick = () => selectCard(div, card, index);
-        grid.appendChild(div);
-      });
-    }
+        let selectedCards = [];
+        let matchedPairs = 0;
+        let timeLeft = 30;
+        let timerInterval;
+        let gameStarted = false;
 
-    function startTimer() {
-      timerInterval = setInterval(() => {
-        timeLeft--;
-        document.getElementById("timer").innerText = `Tempo: ${timeLeft}s`;
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          alert("⏰ Tempo esgotado! Tente novamente.");
-          location.reload();
+        function mostrarToast(mensagem) {
+            const toast = document.getElementById('toast');
+            toast.textContent = mensagem;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
         }
-      }, 1000);
-    }
 
-    function selectCard(element, card, index) {
-      if (element.classList.contains("matched") || element.classList.contains("selected")) return;
-      if (selectedCards.length === 2) return;
+        // Embaralha as cartas
+        const shuffled = cardPairs.sort(() => Math.random() - 0.5);
 
-      element.classList.add("selected");
-      selectedCards.push({ element, card, index });
+        function renderGrid() {
+            const grid = document.getElementById("grid");
+            grid.innerHTML = "";
+            shuffled.forEach((card, index) => {
+                const div = document.createElement("div");
+                div.className = "card";
+                div.innerText = card.text;
+                div.onclick = () => selectCard(div, card, index);
+                grid.appendChild(div);
+            });
+        }
 
-      if (selectedCards.length === 2) {
-        const [first, second] = selectedCards;
+        function startTimer() {
+            if (gameStarted) return;
+            gameStarted = true;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").innerText = `${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    mostrarToast("⏰ Tempo esgotado!");
+                    setTimeout(() => location.reload(), 1500);
+                }
+            }, 1000);
+        }
 
-        // Verifica se é o mesmo par de ID (Pergunta correspondendo à Resposta)
-        if (first.card.id === second.card.id && first.index !== second.index) {
-          setTimeout(() => {
-            first.element.className = "card matched";
-            second.element.className = "card matched";
-            matchedPairs++;
-            document.getElementById("pairs").innerText = `Pares: ${matchedPairs}/3`;
-            selectedCards = [];
+        function selectCard(element, card, index) {
+            if (element.classList.contains("matched") || element.classList.contains("selected")) return;
+            if (selectedCards.length === 2) return;
 
-            if (matchedPairs === 3) {
-              clearInterval(timerInterval);
-              document.getElementById("timer").innerText = "🎉 Vitória!";
+            startTimer();
+            element.classList.add("selected");
+            selectedCards.push({ element, card, index });
+
+            if (selectedCards.length === 2) {
+                const [first, second] = selectedCards;
+
+                // Verifica se é o mesmo par de ID (Pergunta correspondendo à Resposta)
+                if (first.card.id === second.card.id && first.index !== second.index) {
+                    setTimeout(() => {
+                        first.element.className = "card matched";
+                        second.element.className = "card matched";
+                        matchedPairs++;
+                        document.getElementById("pairs").innerText = `${matchedPairs}/3`;
+                        selectedCards = [];
+
+                        if (matchedPairs === 3) {
+                            clearInterval(timerInterval);
+                            const tempoFinal = 30 - timeLeft;
+                            document.getElementById("win-time").innerText = 
+                                `Você completou em ${tempoFinal}s!`;
+                            document.getElementById("win-overlay").classList.add("show");
+                            lucide.createIcons();
+                        }
+                    }, 300);
+                } else {
+                    setTimeout(() => {
+                        first.element.classList.remove("selected");
+                        second.element.classList.remove("selected");
+                        selectedCards = [];
+                    }, 700);
+                }
             }
-          }, 300);
-        } else {
-          setTimeout(() => {
-            first.element.classList.remove("selected");
-            second.element.classList.remove("selected");
-            selectedCards = [];
-          }, 700);
         }
-      }
-    }
 
-    renderGrid();
-    startTimer();
-  </script>
+        function reiniciarJogo() {
+            document.getElementById("win-overlay").classList.remove("show");
+            location.reload();
+        }
+
+        renderGrid();
+    </script>
 </body>
+
 </html>
