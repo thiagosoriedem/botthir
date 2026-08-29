@@ -301,6 +301,9 @@ def obter_previsao_despesas(user_id, mes=None, ano=None):
     if ano is None:
         ano = datetime.now().year
 
+    mes = int(mes)
+    ano = int(ano)
+
     despesas_fixas = obter_despesas_fixas(user_id, ativa=True)
     transacoes = obter_transacoes_usuario(user_id, mes, ano)
 
@@ -373,6 +376,9 @@ def aplicar_despesas_fixas(user_id, mes=None, ano=None):
         mes = datetime.now().month
     if ano is None:
         ano = datetime.now().year
+
+    mes = int(mes)
+    ano = int(ano)
 
     despesas_fixas = obter_despesas_fixas(user_id, ativa=True)
     transacoes = obter_transacoes_usuario(user_id, mes, ano)
@@ -538,6 +544,9 @@ def obter_previsao_receitas(user_id, mes=None, ano=None):
     if ano is None:
         ano = datetime.now().year
 
+    mes = int(mes)
+    ano = int(ano)
+
     receitas_fixas = obter_receitas_fixas(user_id, ativa=True)
     dividendos = obter_dividendos(user_id)
     transacoes = obter_transacoes_usuario(user_id, mes, ano)
@@ -656,6 +665,9 @@ def aplicar_receitas_fixas(user_id, mes=None, ano=None):
         mes = datetime.now().month
     if ano is None:
         ano = datetime.now().year
+
+    mes = int(mes)
+    ano = int(ano)
 
     receitas_fixas = obter_receitas_fixas(user_id, ativa=True)
     transacoes = obter_transacoes_usuario(user_id, mes, ano)
@@ -966,6 +978,9 @@ def aplicar_dividendos_como_receita(user_id, mes=None, ano=None):
         mes = datetime.now().month
     if ano is None:
         ano = datetime.now().year
+
+    mes = int(mes)
+    ano = int(ano)
 
     dividendos = obter_dividendos(user_id)
     transacoes = obter_transacoes_usuario(user_id, mes, ano)
