@@ -167,6 +167,12 @@ def setup_bot_commands():
 # Executa o registro de comandos na inicialização
 setup_bot_commands()
 
+# Rota para forçar a atualização dos comandos do bot
+@app.route("/setup_commands", methods=["GET", "POST"])
+def setup_commands_route():
+    setup_bot_commands()
+    return jsonify({"status": "success", "message": "Comandos atualizados!"})
+
 def enviar_menu_jogos(chat_id):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
@@ -569,6 +575,9 @@ def telegram_webhook():
         text = message.get("text", "").strip()
 
         if text in ["/start", "/menu"]:
+            # Garante que os comandos estejam registrados
+            setup_bot_commands()
+            
             msg_texto = (
                 "🤖 *Olá! Sou o seu Agente Pessoal.*\n\n"
                 "Escolha um dos módulos abaixo para acessar:"
