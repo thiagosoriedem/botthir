@@ -16,6 +16,23 @@ from modules.financas import (
     obter_metas_financeiras,
     atualizar_progresso_meta,
     excluir_meta_financeira,
+    salvar_despesa_fixa,
+    obter_despesas_fixas,
+    alternar_despesa_fixa,
+    excluir_despesa_fixa,
+    obter_previsao_despesas,
+    aplicar_despesas_fixas,
+    salvar_investimento,
+    obter_investimentos,
+    atualizar_investimento,
+    excluir_investimento,
+    calcular_crescimento_investimento,
+    salvar_dividendo,
+    obter_dividendos,
+    excluir_dividendo,
+    calcular_projecao_dividendos,
+    buscar_cotacao_b3,
+    buscar_dividendos_b3,
 )
 
 
@@ -369,6 +386,162 @@ def delete_user_meta(user_id, meta_id):
 def delete_user_transacao(user_id, transacao_id):
     sucesso, msg = excluir_transacao(user_id, transacao_id)
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# ===== API DE DESPESAS FIXAS =====
+
+# API GET: Lista despesas fixas
+@app.route("/api/financas/<int:user_id>/despesas-fixas", methods=["GET"])
+def get_user_despesas_fixas(user_id):
+    despesas = obter_despesas_fixas(user_id)
+    return jsonify({"status": "success", "despesas_fixas": despesas})
+
+# API POST: Salva uma nova despesa fixa
+@app.route("/api/financas/<int:user_id>/despesas-fixas", methods=["POST"])
+def add_user_despesa_fixa(user_id):
+    data = request.get_json() or {}
+    descricao = data.get("descricao")
+    valor = data.get("valor")
+    dia_vencimento = data.get("dia_vencimento")
+    categoria = data.get("categoria", "Geral")
+
+    if not descricao or not valor or not dia_vencimento:
+        return jsonify({"status": "error", "message": "Dados incompletos"}), 400
+
+    sucesso, msg = salvar_despesa_fixa(user_id, descricao, valor, dia_vencimento, categoria)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API PUT: Ativa/desativa despesa fixa
+@app.route("/api/financas/<int:user_id>/despesas-fixas/<despesa_id>", methods=["PUT"])
+def toggle_user_despesa_fixa(user_id, despesa_id):
+    sucesso, msg = alternar_despesa_fixa(user_id, despesa_id)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API DELETE: Exclui despesa fixa
+@app.route("/api/financas/<int:user_id>/despesas-fixas/<despesa_id>", methods=["DELETE"])
+def delete_user_despesa_fixa(user_id, despesa_id):
+    sucesso, msg = excluir_despesa_fixa(user_id, despesa_id)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API GET: Previsão de despesas do mês
+@app.route("/api/financas/<int:user_id>/previsao", methods=["GET"])
+def get_user_previsao_despesas(user_id):
+    mes = request.args.get("mes")
+    ano = request.args.get("ano")
+    previsao = obter_previsao_despesas(user_id, mes, ano)
+    return jsonify({"status": "success", **previsao})
+
+# API POST: Aplica despesas fixas do mês como transações
+@app.route("/api/financas/<int:user_id>/aplicar-fixas", methods=["POST"])
+def apply_user_despesas_fixas(user_id):
+    mes = request.args.get("mes")
+    ano = request.args.get("ano")
+    aplicadas = aplicar_despesas_fixas(user_id, mes, ano)
+    return jsonify({"status": "success", "aplicadas": aplicadas})
+
+# ===== API DE INVESTIMENTOS =====
+
+# API GET: Lista investimentos
+@app.route("/api/financas/<int:user_id>/investimentos", methods=["GET"])
+def get_user_investimentos(user_id):
+    investimentos = obter_investimentos(user_id)
+    return jsonify({"status": "success", "investimentos": investimentos})
+
+# API POST: Salva um novo investimento
+@app.route("/api/financas/<int:user_id>/investimentos", methods=["POST"])
+def add_user_investimento(user_id):
+    data = request.get_json() or {}
+    nome = data.get("nome")
+    tipo = data.get("tipo", "outro")
+    valor_investido = data.get("valor_investido")
+    corretora = data.get("corretora", "")
+    taxa_anual = data.get("taxa_anual", 0)
+    data_inicio = data.get("data_inicio")
+    observacoes = data.get("observacoes", "")
+
+    if not nome or not valor_investido:
+        return jsonify({"status": "error", "message": "Dados incompletos"}), 400
+
+    sucesso, msg = salvar_investimento(
+        user_id, nome, tipo, valor_investido, corretora, taxa_anual, data_inicio, observacoes
+    )
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API PUT: Atualiza investimento
+@app.route("/api/financas/<int:user_id>/investimentos/<investimento_id>", methods=["PUT"])
+def update_user_investimento(user_id, investimento_id):
+    data = request.get_json() or {}
+    sucesso, msg = atualizar_investimento(user_id, investimento_id, data)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API DELETE: Exclui investimento
+@app.route("/api/financas/<int:user_id>/investimentos/<investimento_id>", methods=["DELETE"])
+def delete_user_investimento(user_id, investimento_id):
+    sucesso, msg = excluir_investimento(user_id, investimento_id)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API GET: Crescimento dos investimentos
+@app.route("/api/financas/<int:user_id>/investimentos/crescimento", methods=["GET"])
+def get_user_crescimento_investimentos(user_id):
+    resultado = calcular_crescimento_investimento(user_id)
+    return jsonify({"status": "success", **resultado})
+
+# ===== API DE DIVIDENDOS =====
+
+# API GET: Lista dividendos programados
+@app.route("/api/financas/<int:user_id>/dividendos", methods=["GET"])
+def get_user_dividendos(user_id):
+    dividendos = obter_dividendos(user_id)
+    return jsonify({"status": "success", "dividendos": dividendos})
+
+# API POST: Salva um novo dividendo programado
+@app.route("/api/financas/<int:user_id>/dividendos", methods=["POST"])
+def add_user_dividendo(user_id):
+    data = request.get_json() or {}
+    investimento_id = data.get("investimento_id")
+    descricao = data.get("descricao")
+    valor_estimado = data.get("valor_estimado")
+    frequencia = data.get("frequencia", "mensal")
+    dia_recebimento = data.get("dia_recebimento", 1)
+
+    if not investimento_id or not descricao or not valor_estimado:
+        return jsonify({"status": "error", "message": "Dados incompletos"}), 400
+
+    sucesso, msg = salvar_dividendo(
+        user_id, investimento_id, descricao, valor_estimado, frequencia, dia_recebimento
+    )
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API DELETE: Exclui dividendo
+@app.route("/api/financas/<int:user_id>/dividendos/<dividendo_id>", methods=["DELETE"])
+def delete_user_dividendo(user_id, dividendo_id):
+    sucesso, msg = excluir_dividendo(user_id, dividendo_id)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API GET: Projeção de dividendos
+@app.route("/api/financas/<int:user_id>/dividendos/projecao", methods=["GET"])
+def get_user_projecao_dividendos(user_id):
+    meses = int(request.args.get("meses", 12))
+    projecao = calcular_projecao_dividendos(user_id, meses)
+    return jsonify({"status": "success", **projecao})
+
+# ===== API B3 (yfinance) =====
+
+# API GET: Busca cotação de ativo da B3
+@app.route("/api/b3/cotacao/<ticker>", methods=["GET"])
+def get_b3_cotacao(ticker):
+    cotacao, erro = buscar_cotacao_b3(ticker)
+    if erro:
+        return jsonify({"status": "error", "message": erro}), 400
+    return jsonify({"status": "success", **cotacao})
+
+# API GET: Busca histórico de dividendos de ativo da B3
+@app.route("/api/b3/dividendos/<ticker>", methods=["GET"])
+def get_b3_dividendos(ticker):
+    periodo = request.args.get("periodo", "1y")
+    dividendos, erro = buscar_dividendos_b3(ticker, periodo)
+    if erro:
+        return jsonify({"status": "error", "message": erro}), 400
+    return jsonify({"status": "success", "dividendos": dividendos})
 
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def telegram_webhook():

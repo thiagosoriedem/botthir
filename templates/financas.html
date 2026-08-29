@@ -21,6 +21,7 @@
             --blue: #3498db;
             --orange: #f39c12;
             --purple: #9b59b6;
+            --teal: #1abc9c;
         }
 
         * {
@@ -134,6 +135,7 @@
         .btn-blue { background-color: var(--blue); }
         .btn-orange { background-color: var(--orange); }
         .btn-purple { background-color: var(--purple); }
+        .btn-teal { background-color: var(--teal); }
         .btn-gray { background-color: #7f8c8d; }
         .btn-sm { padding: 6px 10px; font-size: 0.75rem; border-radius: 8px; }
         .btn-block { width: 100%; margin-top: 8px; }
@@ -276,23 +278,25 @@
         /* --- NAVEGAÇÃO --- */
         .nav-tabs {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             margin-bottom: 16px;
             background-color: var(--card-bg);
             border-radius: 12px;
             padding: 6px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            flex-wrap: wrap;
         }
 
         .nav-tab {
             flex: 1;
-            padding: 10px 6px;
+            min-width: 80px;
+            padding: 10px 4px;
             border: none;
             border-radius: 8px;
             background: transparent;
             color: var(--text-color);
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             cursor: pointer;
             transition: background 0.2s;
         }
@@ -355,6 +359,172 @@
         .toast.show {
             opacity: 1;
         }
+
+        /* --- DESPESAS FIXAS --- */
+        .fixa-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .fixa-item:last-child {
+            border-bottom: none;
+        }
+
+        .fixa-info {
+            flex: 1;
+        }
+
+        .fixa-descricao {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .fixa-detalhes {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        .fixa-valor {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-right: 8px;
+            color: var(--red);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-ativa { background-color: rgba(46, 204, 113, 0.2); color: var(--green); }
+        .badge-inativa { background-color: rgba(127, 140, 141, 0.2); color: #7f8c8d; }
+
+        /* --- INVESTIMENTOS --- */
+        .investimento-item {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .investimento-item:last-child {
+            border-bottom: none;
+        }
+
+        .investimento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .investimento-nome {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .investimento-tipo {
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+
+        .investimento-valores {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+
+        .investimento-crescimento {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .crescimento-positivo { color: var(--green); }
+        .crescimento-negativo { color: var(--red); }
+
+        /* --- DIVIDENDOS --- */
+        .dividendo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .dividendo-item:last-child {
+            border-bottom: none;
+        }
+
+        .dividendo-info {
+            flex: 1;
+        }
+
+        .dividendo-descricao {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .dividendo-detalhes {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        .dividendo-valor {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-right: 8px;
+            color: var(--green);
+        }
+
+        /* --- B3 --- */
+        .b3-busca {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .b3-busca input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 0.9rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            text-transform: uppercase;
+        }
+
+        .b3-resultado {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .b3-ticker {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .b3-preco {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 4px 0;
+        }
+
+        .b3-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-top: 6px;
+        }
     </style>
 </head>
 
@@ -366,6 +536,9 @@
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="mostrarAba('dashboard')">📊 Dashboard</button>
             <button class="nav-tab" onclick="mostrarAba('transacoes')">💳 Transações</button>
+            <button class="nav-tab" onclick="mostrarAba('fixas')">🔁 Fixas</button>
+            <button class="nav-tab" onclick="mostrarAba('investimentos')">📈 Invest.</button>
+            <button class="nav-tab" onclick="mostrarAba('dividendos')">💵 Dividendos</button>
             <button class="nav-tab" onclick="mostrarAba('metas')">🎯 Metas</button>
         </div>
 
@@ -401,6 +574,13 @@
                     <canvas id="grafico-categorias"></canvas>
                 </div>
                 <div id="lista-categorias"></div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>🔮 Previsão do Mês</h2>
+                </div>
+                <div id="previsao-despesas"></div>
             </div>
 
             <div class="section">
@@ -459,6 +639,182 @@
                     <h2>📋 Todas as Transações</h2>
                 </div>
                 <div id="lista-transacoes"></div>
+            </div>
+        </div>
+
+        <!-- ===== DESPESAS FIXAS ===== -->
+        <div id="aba-fixas" class="hidden">
+            <button class="btn btn-orange btn-block" onclick="abrirFormDespesaFixa()">🔁 Nova Despesa Fixa</button>
+
+            <!-- FORMULÁRIO DE DESPESA FIXA -->
+            <div id="form-despesa-fixa" class="section hidden">
+                <h3>Nova Despesa Fixa</h3>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="input-fixa-descricao" placeholder="Ex: Aluguel, Internet, Academia...">
+                </div>
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="number" id="input-fixa-valor" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Dia de Vencimento</label>
+                    <input type="number" id="input-fixa-dia" placeholder="Ex: 5" min="1" max="31">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="input-fixa-categoria">
+                        <option value="Alimentação">🍔 Alimentação</option>
+                        <option value="Transporte">🚗 Transporte</option>
+                        <option value="Moradia">🏠 Moradia</option>
+                        <option value="Saúde">💊 Saúde</option>
+                        <option value="Educação">📚 Educação</option>
+                        <option value="Lazer">🎮 Lazer</option>
+                        <option value="Assinaturas">📺 Assinaturas</option>
+                        <option value="Outros">📦 Outros</option>
+                    </select>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-green" onclick="salvarDespesaFixa()">💾 Salvar</button>
+                    <button class="btn btn-gray" onclick="fecharFormDespesaFixa()">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>🔁 Despesas Fixas</h2>
+                    <button class="btn btn-sm btn-teal" onclick="aplicarFixas()">⚡ Aplicar</button>
+                </div>
+                <div id="lista-despesas-fixas"></div>
+            </div>
+        </div>
+
+        <!-- ===== INVESTIMENTOS ===== -->
+        <div id="aba-investimentos" class="hidden">
+            <button class="btn btn-teal btn-block" onclick="abrirFormInvestimento()">📈 Novo Investimento</button>
+
+            <!-- FORMULÁRIO DE INVESTIMENTO -->
+            <div id="form-investimento" class="section hidden">
+                <h3>Novo Investimento</h3>
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" id="input-inv-nome" placeholder="Ex: PETR4, CDB Banco X, Poupança...">
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="input-inv-tipo">
+                        <option value="acao">📊 Ação</option>
+                        <option value="fii">🏢 FII</option>
+                        <option value="tesouro">🇧🇷 Tesouro Direto</option>
+                        <option value="cdb">🏦 CDB</option>
+                        <option value="poupanca">💰 Poupança</option>
+                        <option value="cripto">🪙 Cripto</option>
+                        <option value="outro">📦 Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor Investido (R$)</label>
+                    <input type="number" id="input-inv-valor" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Corretora / Local</label>
+                    <input type="text" id="input-inv-corretora" placeholder="Ex: XP, Nubank, Binance...">
+                </div>
+                <div class="form-group">
+                    <label>Taxa Anual Estimada (%)</label>
+                    <input type="number" id="input-inv-taxa" placeholder="Ex: 10.5" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Data de Início</label>
+                    <input type="date" id="input-inv-data">
+                </div>
+                <div class="form-group">
+                    <label>Observações</label>
+                    <input type="text" id="input-inv-obs" placeholder="Taxas, condições, etc...">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-green" onclick="salvarInvestimento()">💾 Salvar</button>
+                    <button class="btn btn-gray" onclick="fecharFormInvestimento()">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>📈 Crescimento</h2>
+                </div>
+                <div id="resumo-crescimento"></div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>💼 Meus Investimentos</h2>
+                </div>
+                <div id="lista-investimentos"></div>
+            </div>
+
+            <!-- BUSCA B3 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>🔍 Buscar na B3</h2>
+                </div>
+                <div class="b3-busca">
+                    <input type="text" id="input-b3-ticker" placeholder="Ex: PETR4, VALE3, MXRF11">
+                    <button class="btn btn-blue" onclick="buscarB3()">Buscar</button>
+                </div>
+                <div id="b3-resultado"></div>
+            </div>
+        </div>
+
+        <!-- ===== DIVIDENDOS ===== -->
+        <div id="aba-dividendos" class="hidden">
+            <button class="btn btn-green btn-block" onclick="abrirFormDividendo()">💵 Novo Dividendo</button>
+
+            <!-- FORMULÁRIO DE DIVIDENDO -->
+            <div id="form-dividendo" class="section hidden">
+                <h3>Novo Dividendo Programado</h3>
+                <div class="form-group">
+                    <label>Investimento</label>
+                    <select id="input-div-investimento"></select>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="input-div-descricao" placeholder="Ex: Dividendos PETR4">
+                </div>
+                <div class="form-group">
+                    <label>Valor Estimado (R$)</label>
+                    <input type="number" id="input-div-valor" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Frequência</label>
+                    <select id="input-div-frequencia">
+                        <option value="mensal">📅 Mensal</option>
+                        <option value="trimestral">📅 Trimestral</option>
+                        <option value="semestral">📅 Semestral</option>
+                        <option value="anual">📅 Anual</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Dia de Recebimento</label>
+                    <input type="number" id="input-div-dia" placeholder="Ex: 15" min="1" max="31">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-green" onclick="salvarDividendo()">💾 Salvar</button>
+                    <button class="btn btn-gray" onclick="fecharFormDividendo()">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>📊 Projeção Anual</h2>
+                </div>
+                <div id="resumo-dividendos"></div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>💵 Dividendos Programados</h2>
+                </div>
+                <div id="lista-dividendos"></div>
             </div>
         </div>
 
@@ -560,35 +916,35 @@
         // --- NAVEGAÇÃO DE ABAS ---
         function mostrarAba(aba) {
             document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('#aba-dashboard, #aba-transacoes, #aba-metas').forEach(el => el.classList.add('hidden'));
+            const abas = ['dashboard', 'transacoes', 'fixas', 'investimentos', 'dividendos', 'metas'];
+            abas.forEach(a => document.getElementById(`aba-${a}`).classList.add('hidden'));
 
-            if (aba === 'dashboard') {
-                document.querySelectorAll('.nav-tab')[0].classList.add('active');
-                document.getElementById('aba-dashboard').classList.remove('hidden');
-                carregarDashboard();
-            } else if (aba === 'transacoes') {
-                document.querySelectorAll('.nav-tab')[1].classList.add('active');
-                document.getElementById('aba-transacoes').classList.remove('hidden');
-                carregarTransacoes();
-            } else if (aba === 'metas') {
-                document.querySelectorAll('.nav-tab')[2].classList.add('active');
-                document.getElementById('aba-metas').classList.remove('hidden');
-                carregarMetas();
-            }
+            const index = abas.indexOf(aba);
+            document.querySelectorAll('.nav-tab')[index].classList.add('active');
+            document.getElementById(`aba-${aba}`).classList.remove('hidden');
+
+            if (aba === 'dashboard') carregarDashboard();
+            else if (aba === 'transacoes') carregarTransacoes();
+            else if (aba === 'fixas') carregarDespesasFixas();
+            else if (aba === 'investimentos') { carregarInvestimentos(); carregarCrescimento(); }
+            else if (aba === 'dividendos') { carregarDividendos(); carregarProjecaoDividendos(); carregarSelectInvestimentos(); }
+            else if (aba === 'metas') carregarMetas();
         }
 
         // ===== DASHBOARD =====
         async function carregarDashboard() {
             try {
-                const [resumoRes, categoriasRes, transacoesRes] = await Promise.all([
+                const [resumoRes, categoriasRes, transacoesRes, previsaoRes] = await Promise.all([
                     fetch(`/api/financas/${userId}/resumo?mes=${mesAtual}&ano=${anoAtual}`),
                     fetch(`/api/financas/${userId}/categorias?mes=${mesAtual}&ano=${anoAtual}`),
-                    fetch(`/api/financas/${userId}?mes=${mesAtual}&ano=${anoAtual}`)
+                    fetch(`/api/financas/${userId}?mes=${mesAtual}&ano=${anoAtual}`),
+                    fetch(`/api/financas/${userId}/previsao?mes=${mesAtual}&ano=${anoAtual}`)
                 ]);
 
                 const resumo = await resumoRes.json();
                 const categorias = await categoriasRes.json();
                 const transacoes = await transacoesRes.json();
+                const previsao = await previsaoRes.json();
 
                 // Atualiza cards de resumo
                 const saldoEl = document.getElementById('resumo-saldo');
@@ -624,6 +980,34 @@
                     }).join('');
                 }
 
+                // Previsão de despesas
+                const previsaoEl = document.getElementById('previsao-despesas');
+                if (previsao.despesas_pendentes && previsao.despesas_pendentes.length > 0) {
+                    previsaoEl.innerHTML = `
+                        <div style="margin-bottom: 8px; font-size: 0.85rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>💰 Já registrado:</span>
+                                <strong>${formatarMoeda(previsao.total_registrado)}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>🔮 Pendente (fixas):</span>
+                                <strong style="color: var(--orange);">${formatarMoeda(previsao.total_pendente)}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.1);">
+                                <span><strong>Total previsto:</strong></span>
+                                <strong>${formatarMoeda(previsao.total_previsao)}</strong>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 6px;">
+                            ${previsao.despesas_pendentes.map(d => 
+                                `• ${d.descricao} - ${formatarMoeda(d.valor)} (dia ${d.dia_vencimento})`
+                            ).join('<br>')}
+                        </div>
+                    `;
+                } else {
+                    previsaoEl.innerHTML = '<div class="empty-state">Nenhuma despesa fixa pendente.</div>';
+                }
+
                 // Últimas transações
                 const ultimas = document.getElementById('ultimas-transacoes');
                 if (transacoes.transacoes && transacoes.transacoes.length > 0) {
@@ -656,6 +1040,7 @@
                 'Lazer': '#e67e22',
                 'Salário': '#27ae60',
                 'Investimentos': '#1abc9c',
+                'Assinaturas': '#e84393',
                 'Outros': '#7f8c8d'
             };
             return cores[categoria] || '#7f8c8d';
@@ -739,13 +1124,13 @@
             document.getElementById('input-valor').value = '';
             document.getElementById('input-data').value = new Date().toISOString().split('T')[0];
 
-            // Ajusta categorias para receita/despesa
             const select = document.getElementById('input-categoria');
             select.innerHTML = tipo === 'receita'
                 ? `
                     <option value="Salário">💼 Salário</option>
                     <option value="Investimentos">📈 Investimentos</option>
                     <option value="Freelance">💻 Freelance</option>
+                    <option value="Dividendos">💵 Dividendos</option>
                     <option value="Outros">📦 Outros</option>
                 `
                 : `
@@ -755,6 +1140,7 @@
                     <option value="Saúde">💊 Saúde</option>
                     <option value="Educação">📚 Educação</option>
                     <option value="Lazer">🎮 Lazer</option>
+                    <option value="Assinaturas">📺 Assinaturas</option>
                     <option value="Outros">📦 Outros</option>
                 `;
 
@@ -822,6 +1208,512 @@
             } catch (err) {
                 console.error('Erro ao excluir transação:', err);
                 mostrarToast('Erro ao excluir transação');
+            }
+        }
+
+        // ===== DESPESAS FIXAS =====
+        async function carregarDespesasFixas() {
+            try {
+                const response = await fetch(`/api/financas/${userId}/despesas-fixas`);
+                const result = await response.json();
+
+                const lista = document.getElementById('lista-despesas-fixas');
+                if (result.despesas_fixas && result.despesas_fixas.length > 0) {
+                    lista.innerHTML = result.despesas_fixas.map(df => `
+                        <div class="fixa-item">
+                            <div class="fixa-info">
+                                <div class="fixa-descricao">${df.descricao}
+                                    <span class="badge ${df.ativa ? 'badge-ativa' : 'badge-inativa'}">${df.ativa ? 'Ativa' : 'Pausada'}</span>
+                                </div>
+                                <div class="fixa-detalhes">${df.categoria} • Vence dia ${df.dia_vencimento}</div>
+                            </div>
+                            <div class="fixa-valor">${formatarMoeda(df.valor)}</div>
+                            <div class="transacao-acoes">
+                                <button class="btn btn-sm ${df.ativa ? 'btn-orange' : 'btn-green'}" onclick="toggleDespesaFixa('${df.id}')">${df.ativa ? '⏸️' : '▶️'}</button>
+                                <button class="btn btn-sm btn-red" onclick="deletarDespesaFixa('${df.id}')">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    lista.innerHTML = '<div class="empty-state">Nenhuma despesa fixa cadastrada.<br>Clique em 🔁 Nova Despesa Fixa para começar!</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar despesas fixas:', err);
+                mostrarToast('Erro ao carregar despesas fixas');
+            }
+        }
+
+        function abrirFormDespesaFixa() {
+            document.getElementById('input-fixa-descricao').value = '';
+            document.getElementById('input-fixa-valor').value = '';
+            document.getElementById('input-fixa-dia').value = '';
+            document.getElementById('form-despesa-fixa').classList.remove('hidden');
+        }
+
+        function fecharFormDespesaFixa() {
+            document.getElementById('form-despesa-fixa').classList.add('hidden');
+        }
+
+        async function salvarDespesaFixa() {
+            const descricao = document.getElementById('input-fixa-descricao').value.trim();
+            const valor = parseFloat(document.getElementById('input-fixa-valor').value);
+            const diaVencimento = parseInt(document.getElementById('input-fixa-dia').value);
+            const categoria = document.getElementById('input-fixa-categoria').value;
+
+            if (!descricao || !valor || !diaVencimento || diaVencimento < 1 || diaVencimento > 31) {
+                mostrarToast('Preencha todos os campos corretamente!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/despesas-fixas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        descricao: descricao,
+                        valor: valor,
+                        dia_vencimento: diaVencimento,
+                        categoria: categoria
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('✅ Despesa fixa salva!');
+                    fecharFormDespesaFixa();
+                    carregarDespesasFixas();
+                    carregarDashboard();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao salvar despesa fixa:', err);
+                mostrarToast('Erro ao salvar despesa fixa');
+            }
+        }
+
+        async function toggleDespesaFixa(despesaId) {
+            try {
+                const response = await fetch(`/api/financas/${userId}/despesas-fixas/${despesaId}`, {
+                    method: 'PUT'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    carregarDespesasFixas();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao alternar despesa fixa:', err);
+            }
+        }
+
+        async function deletarDespesaFixa(despesaId) {
+            if (!confirm('Tem certeza que deseja excluir esta despesa fixa?')) return;
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/despesas-fixas/${despesaId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('🗑️ Despesa fixa excluída!');
+                    carregarDespesasFixas();
+                    carregarDashboard();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao excluir despesa fixa:', err);
+            }
+        }
+
+        async function aplicarFixas() {
+            if (!confirm('Aplicar as despesas fixas pendentes como transações deste mês?')) return;
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/aplicar-fixas?mes=${mesAtual}&ano=${anoAtual}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast(`⚡ ${result.aplicadas} despesa(s) fixa(s) aplicada(s)!`);
+                    carregarDespesasFixas();
+                    carregarDashboard();
+                    carregarTransacoes();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao aplicar despesas fixas:', err);
+            }
+        }
+
+        // ===== INVESTIMENTOS =====
+        async function carregarInvestimentos() {
+            try {
+                const response = await fetch(`/api/financas/${userId}/investimentos`);
+                const result = await response.json();
+
+                const lista = document.getElementById('lista-investimentos');
+                if (result.investimentos && result.investimentos.length > 0) {
+                    lista.innerHTML = result.investimentos.map(inv => `
+                        <div class="investimento-item">
+                            <div class="investimento-header">
+                                <div>
+                                    <div class="investimento-nome">${inv.nome}</div>
+                                    <div class="investimento-tipo">${getTipoInvestimentoLabel(inv.tipo)} • ${inv.corretora || 'Sem corretora'}</div>
+                                </div>
+                                <div class="transacao-acoes">
+                                    <button class="btn btn-sm btn-red" onclick="deletarInvestimento('${inv.id}')">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="investimento-valores">
+                                <span>Investido: <strong>${formatarMoeda(inv.valor_investido)}</strong></span>
+                                <span>Taxa: <strong>${inv.taxa_anual}% a.a.</strong></span>
+                            </div>
+                            <div style="font-size: 0.75rem; opacity: 0.6;">
+                                Início: ${formatarData(inv.data_inicio)} ${inv.observacoes ? `• ${inv.observacoes}` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    lista.innerHTML = '<div class="empty-state">Nenhum investimento cadastrado.<br>Clique em 📈 Novo Investimento para começar!</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar investimentos:', err);
+                mostrarToast('Erro ao carregar investimentos');
+            }
+        }
+
+        async function carregarCrescimento() {
+            try {
+                const response = await fetch(`/api/financas/${userId}/investimentos/crescimento`);
+                const result = await response.json();
+
+                const resumo = document.getElementById('resumo-crescimento');
+                if (result.total_investido > 0) {
+                    const pctClass = result.total_crescimento >= 0 ? 'crescimento-positivo' : 'crescimento-negativo';
+                    resumo.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem;">
+                            <span>💰 Total investido:</span>
+                            <strong>${formatarMoeda(result.total_investido)}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem;">
+                            <span>📈 Valor atual estimado:</span>
+                            <strong>${formatarMoeda(result.total_atual_estimado)}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.1); font-size: 0.85rem;">
+                            <span><strong>Crescimento:</strong></span>
+                            <strong class="${pctClass}">${formatarMoeda(result.total_crescimento)} (${result.total_crescimento_percentual}%)</strong>
+                        </div>
+                        ${result.investimentos && result.investimentos.length > 0 ? `
+                            <div style="margin-top: 10px; font-size: 0.75rem; opacity: 0.7;">
+                                ${result.investimentos.map(inv => `
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                        <span>${inv.nome}</span>
+                                        <span class="${inv.crescimento >= 0 ? 'crescimento-positivo' : 'crescimento-negativo'}">
+                                            ${formatarMoeda(inv.crescimento)} (${inv.crescimento_percentual}%)
+                                        </span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    `;
+                } else {
+                    resumo.innerHTML = '<div class="empty-state">Adicione investimentos para ver o crescimento.</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar crescimento:', err);
+            }
+        }
+
+        function getTipoInvestimentoLabel(tipo) {
+            const labels = {
+                'acao': '📊 Ação',
+                'fii': '🏢 FII',
+                'tesouro': '🇧🇷 Tesouro',
+                'cdb': '🏦 CDB',
+                'poupanca': '💰 Poupança',
+                'cripto': '🪙 Cripto',
+                'outro': '📦 Outro'
+            };
+            return labels[tipo] || tipo;
+        }
+
+        function abrirFormInvestimento() {
+            document.getElementById('input-inv-nome').value = '';
+            document.getElementById('input-inv-valor').value = '';
+            document.getElementById('input-inv-corretora').value = '';
+            document.getElementById('input-inv-taxa').value = '';
+            document.getElementById('input-inv-data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('input-inv-obs').value = '';
+            document.getElementById('form-investimento').classList.remove('hidden');
+        }
+
+        function fecharFormInvestimento() {
+            document.getElementById('form-investimento').classList.add('hidden');
+        }
+
+        async function salvarInvestimento() {
+            const nome = document.getElementById('input-inv-nome').value.trim();
+            const tipo = document.getElementById('input-inv-tipo').value;
+            const valor = parseFloat(document.getElementById('input-inv-valor').value);
+            const corretora = document.getElementById('input-inv-corretora').value.trim();
+            const taxa = parseFloat(document.getElementById('input-inv-taxa').value) || 0;
+            const dataInicio = document.getElementById('input-inv-data').value;
+            const obs = document.getElementById('input-inv-obs').value.trim();
+
+            if (!nome || !valor || valor <= 0) {
+                mostrarToast('Preencha o nome e um valor válido!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/investimentos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nome: nome,
+                        tipo: tipo,
+                        valor_investido: valor,
+                        corretora: corretora,
+                        taxa_anual: taxa,
+                        data_inicio: dataInicio,
+                        observacoes: obs
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('✅ Investimento salvo!');
+                    fecharFormInvestimento();
+                    carregarInvestimentos();
+                    carregarCrescimento();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao salvar investimento:', err);
+                mostrarToast('Erro ao salvar investimento');
+            }
+        }
+
+        async function deletarInvestimento(investimentoId) {
+            if (!confirm('Tem certeza que deseja excluir este investimento?')) return;
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/investimentos/${investimentoId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('🗑️ Investimento excluído!');
+                    carregarInvestimentos();
+                    carregarCrescimento();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao excluir investimento:', err);
+            }
+        }
+
+        // ===== BUSCA B3 =====
+        async function buscarB3() {
+            const ticker = document.getElementById('input-b3-ticker').value.trim().toUpperCase();
+            if (!ticker) {
+                mostrarToast('Digite um ticker!');
+                return;
+            }
+
+            const resultadoEl = document.getElementById('b3-resultado');
+            resultadoEl.innerHTML = '<div class="empty-state">Buscando cotação...</div>';
+
+            try {
+                const response = await fetch(`/api/b3/cotacao/${ticker}`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const variacaoClass = result.variacao_percentual >= 0 ? 'crescimento-positivo' : 'crescimento-negativo';
+                    resultadoEl.innerHTML = `
+                        <div class="b3-resultado">
+                            <div class="b3-ticker">${result.ticker}</div>
+                            <div class="b3-preco">${formatarMoeda(result.preco_atual)}</div>
+                            <div class="b3-info">
+                                <span class="${variacaoClass}">${result.variacao_percentual >= 0 ? '▲' : '▼'} ${result.variacao_percentual}%</span>
+                                <span>💵 Últ. dividendo: ${formatarMoeda(result.ultimo_dividendo)}</span>
+                                <span>📊 DY: ${result.dividend_yield}%</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultadoEl.innerHTML = `<div class="empty-state">❌ ${result.message}</div>`;
+                }
+            } catch (err) {
+                console.error('Erro ao buscar B3:', err);
+                resultadoEl.innerHTML = '<div class="empty-state">Erro ao buscar cotação.</div>';
+            }
+        }
+
+        // ===== DIVIDENDOS =====
+        async function carregarSelectInvestimentos() {
+            try {
+                const response = await fetch(`/api/financas/${userId}/investimentos`);
+                const result = await response.json();
+
+                const select = document.getElementById('input-div-investimento');
+                if (result.investimentos && result.investimentos.length > 0) {
+                    select.innerHTML = result.investimentos.map(inv => 
+                        `<option value="${inv.id}">${inv.nome}</option>`
+                    ).join('');
+                } else {
+                    select.innerHTML = '<option value="">Nenhum investimento cadastrado</option>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar investimentos para select:', err);
+            }
+        }
+
+        async function carregarDividendos() {
+            try {
+                const response = await fetch(`/api/financas/${userId}/dividendos`);
+                const result = await response.json();
+
+                const lista = document.getElementById('lista-dividendos');
+                if (result.dividendos && result.dividendos.length > 0) {
+                    lista.innerHTML = result.dividendos.map(div => `
+                        <div class="dividendo-item">
+                            <div class="dividendo-info">
+                                <div class="dividendo-descricao">${div.descricao}</div>
+                                <div class="dividendo-detalhes">${div.investimento_nome} • ${getFrequenciaLabel(div.frequencia)} • Dia ${div.dia_recebimento}</div>
+                            </div>
+                            <div class="dividendo-valor">${formatarMoeda(div.valor_estimado)}</div>
+                            <div class="transacao-acoes">
+                                <button class="btn btn-sm btn-red" onclick="deletarDividendo('${div.id}')">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    lista.innerHTML = '<div class="empty-state">Nenhum dividendo programado.<br>Clique em 💵 Novo Dividendo para começar!</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar dividendos:', err);
+                mostrarToast('Erro ao carregar dividendos');
+            }
+        }
+
+        async function carregarProjecaoDividendos() {
+            try {
+                const response = await fetch(`/api/financas/${userId}/dividendos/projecao?meses=12`);
+                const result = await response.json();
+
+                const resumo = document.getElementById('resumo-dividendos');
+                if (result.total_anual_estimado > 0) {
+                    resumo.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem;">
+                            <span>📅 Total anual estimado:</span>
+                            <strong>${formatarMoeda(result.total_anual_estimado)}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem;">
+                            <span>📊 Média mensal:</span>
+                            <strong>${formatarMoeda(result.media_mensal)}</strong>
+                        </div>
+                        <div style="font-size: 0.75rem; opacity: 0.7;">
+                            ${result.projecao.map(m => `
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                    <span>${MESES[m.mes - 1]} ${m.ano}</span>
+                                    <span>${formatarMoeda(m.total)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    resumo.innerHTML = '<div class="empty-state">Adicione dividendos para ver a projeção.</div>';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar projeção:', err);
+            }
+        }
+
+        function getFrequenciaLabel(freq) {
+            const labels = {
+                'mensal': 'Mensal',
+                'trimestral': 'Trimestral',
+                'semestral': 'Semestral',
+                'anual': 'Anual'
+            };
+            return labels[freq] || freq;
+        }
+
+        function abrirFormDividendo() {
+            document.getElementById('input-div-descricao').value = '';
+            document.getElementById('input-div-valor').value = '';
+            document.getElementById('input-div-dia').value = '15';
+            document.getElementById('form-dividendo').classList.remove('hidden');
+        }
+
+        function fecharFormDividendo() {
+            document.getElementById('form-dividendo').classList.add('hidden');
+        }
+
+        async function salvarDividendo() {
+            const investimentoId = document.getElementById('input-div-investimento').value;
+            const descricao = document.getElementById('input-div-descricao').value.trim();
+            const valor = parseFloat(document.getElementById('input-div-valor').value);
+            const frequencia = document.getElementById('input-div-frequencia').value;
+            const dia = parseInt(document.getElementById('input-div-dia').value) || 1;
+
+            if (!investimentoId || !descricao || !valor || valor <= 0) {
+                mostrarToast('Preencha todos os campos corretamente!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/dividendos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        investimento_id: investimentoId,
+                        descricao: descricao,
+                        valor_estimado: valor,
+                        frequencia: frequencia,
+                        dia_recebimento: dia
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('✅ Dividendo salvo!');
+                    fecharFormDividendo();
+                    carregarDividendos();
+                    carregarProjecaoDividendos();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao salvar dividendo:', err);
+                mostrarToast('Erro ao salvar dividendo');
+            }
+        }
+
+        async function deletarDividendo(dividendoId) {
+            if (!confirm('Tem certeza que deseja excluir este dividendo?')) return;
+
+            try {
+                const response = await fetch(`/api/financas/${userId}/dividendos/${dividendoId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mostrarToast('🗑️ Dividendo excluído!');
+                    carregarDividendos();
+                    carregarProjecaoDividendos();
+                } else {
+                    mostrarToast('❌ ' + result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao excluir dividendo:', err);
             }
         }
 
