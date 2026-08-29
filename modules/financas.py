@@ -647,80 +647,199 @@ def calcular_projecao_dividendos(user_id, meses=12):
 
 
 # ============================================
-# INTEGRAÇÃO B3 (via yfinance)
+# INTEGRAÇÃO B3
 # ============================================
 
 def buscar_cotacao_b3(ticker):
-    """Busca a cotação atual de um ativo da B3 usando yfinance."""
+    """Busca a cotação atual de um ativo da B3 usando a API pública da B3."""
+    import requests as req
+
+    ticker = ticker.upper().replace(".SA", "")
+
+    # 1. Tenta API oficial da B3 (cotacao.b3.com.br/mds)
+    try:
+        url = f"https://cotacao.b3.com.br/mds/api/v1/DailyFluctuationHistory/{ticker}"
+        response = req.get(url, timeout=10, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "application/json",
+        })
+
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("BizSts", {}).get("cd") == "OK":
+                scty = data.get("TradgFlr", {}).get("scty", {})
+                lst_qtn = scty.get("lstQtn", [])
+
+                if lst_qtn:
+                    # Última cotação do dia
+                    ultima = lst_qtn[-1]
+                    preco_atual = float(ultima.get("closPric", 0) or 0)
+                    variacao = float(ultima.get("prcFlcn", 0) or 0)  # Já vem em percentual
+
+                    # Busca a primeira cotação do dia para referência
+                    primeira = lst_qtn[0]
+                    preco_abertura = float(primeira.get("closPric", 0) or 0)
+
+                    if preco_atual > 0:
+                        return {
+                            "ticker": ticker,
+                            "preco_atual": round(preco_atual, 2),
+                            "variacao_percentual": round(variacao, 2),
+                            "preco_abertura": round(preco_abertura, 2),
+                            "ultimo_dividendo": 0,
+                            "dividend_yield": 0,
+                            "fonte": "B3",
+                        }, None
+    except Exception as e:
+        print(f"Erro na API B3: {e}")
+
+    # 2. Fallback: API brapi.dev (gratuita, sem rate limit agressivo)
+    try:
+        url = f"https://brapi.dev/api/quote/{ticker}?token="
+        response = req.get(url, timeout=10, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        })
+
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("results") and len(data["results"]) > 0:
+                ativo = data["results"][0]
+                preco_atual = float(ativo.get("regularMarketPrice", 0) or 0)
+                variacao = float(ativo.get("regularMarketChangePercent", 0) or 0)
+                preco_abertura = float(ativo.get("regularMarketOpen", 0) or 0)
+                ultimo_dividendo = float(ativo.get("dividendsYield", 0) or 0)
+
+                if preco_atual > 0:
+                    return {
+                        "ticker": ticker,
+                        "preco_atual": round(preco_atual, 2),
+                        "variacao_percentual": round(variacao, 2),
+                        "preco_abertura": round(preco_abertura, 2),
+                        "ultimo_dividendo": round(ultimo_dividendo, 2),
+                        "dividend_yield": round(ultimo_dividendo, 2),
+                        "fonte": "Brapi",
+                    }, None
+    except Exception as e:
+        print(f"Erro na API Brapi: {e}")
+
+    # 3. Fallback: Yahoo Finance (último recurso)
     try:
         import yfinance as yf
 
-        # Converte ticker para formato yfinance (ex: PETR4 -> PETR4.SA)
-        if not ticker.endswith(".SA"):
-            ticker_sa = f"{ticker}.SA"
-        else:
-            ticker_sa = ticker
-
-        ativo = yf.Ticker(ticker_sa)
+        ativo = yf.Ticker(f"{ticker}.SA")
         hist = ativo.history(period="5d")
 
-        if hist.empty:
-            return None, f"Ativo {ticker} não encontrado na B3"
+        if not hist.empty:
+            preco_atual = float(hist["Close"].iloc[-1])
+            preco_anterior = float(hist["Close"].iloc[-2]) if len(hist) > 1 else preco_atual
+            variacao = ((preco_atual - preco_anterior) / preco_anterior * 100) if preco_anterior > 0 else 0
 
-        preco_atual = float(hist["Close"].iloc[-1])
-        preco_anterior = float(hist["Close"].iloc[-2]) if len(hist) > 1 else preco_atual
-        variacao = ((preco_atual - preco_anterior) / preco_anterior * 100) if preco_anterior > 0 else 0
+            dividendos = ativo.dividends
+            ultimo_dividendo = float(dividendos.iloc[-1]) if not dividendos.empty else 0
+            dividend_yield = (ultimo_dividendo / preco_atual * 100) if preco_atual > 0 else 0
 
-        # Tenta buscar dividendos
-        dividendos = ativo.dividends
-        ultimo_dividendo = float(dividendos.iloc[-1]) if not dividendos.empty else 0
-        dividend_yield = (ultimo_dividendo / preco_atual * 100) if preco_atual > 0 else 0
-
-        return {
-            "ticker": ticker.upper(),
-            "preco_atual": round(preco_atual, 2),
-            "variacao_percentual": round(variacao, 2),
-            "ultimo_dividendo": round(ultimo_dividendo, 2),
-            "dividend_yield": round(dividend_yield, 2),
-        }, None
+            return {
+                "ticker": ticker,
+                "preco_atual": round(preco_atual, 2),
+                "variacao_percentual": round(variacao, 2),
+                "preco_abertura": round(preco_anterior, 2),
+                "ultimo_dividendo": round(ultimo_dividendo, 2),
+                "dividend_yield": round(dividend_yield, 2),
+                "fonte": "Yahoo",
+            }, None
     except ImportError:
-        return None, "Biblioteca yfinance não instalada. Execute: pip install yfinance"
+        pass
     except Exception as e:
-        return None, f"Erro ao buscar cotação: {str(e)}"
+        print(f"Erro na API Yahoo: {e}")
+
+    return None, f"Não foi possível buscar cotação de {ticker}. Verifique o ticker ou tente novamente."
+
+
+def atualizar_cotacoes_investimentos(user_id):
+    """Busca cotações automáticas para todos os investimentos do tipo ação/FII do usuário."""
+    investimentos = obter_investimentos(user_id)
+    resultados = []
+
+    for inv in investimentos:
+        tipo = inv.get("tipo", "")
+        nome = inv.get("nome", "")
+
+        # Só busca cotação para ações e FIIs (têm ticker na B3)
+        if tipo not in ["acao", "fii"]:
+            continue
+
+        # Extrai ticker do nome (ex: "PETR4" ou "MXRF11")
+        ticker = nome.strip().upper()
+        if not ticker:
+            continue
+
+        cotacao, erro = buscar_cotacao_b3(ticker)
+        if cotacao:
+            resultados.append({
+                "investimento_id": inv.get("id"),
+                "nome": nome,
+                "ticker": ticker,
+                "preco_atual": cotacao["preco_atual"],
+                "variacao_percentual": cotacao["variacao_percentual"],
+                "fonte": cotacao["fonte"],
+            })
+
+    return resultados
 
 
 def buscar_dividendos_b3(ticker, periodo="1y"):
     """Busca o histórico de dividendos de um ativo da B3."""
+    import requests as req
+
+    ticker = ticker.upper().replace(".SA", "")
+
+    # Tenta brapi.dev primeiro (tem histórico de dividendos)
+    try:
+        url = f"https://brapi.dev/api/quote/{ticker}?token=&range=1y&interval=1d&fundamental=true"
+        response = req.get(url, timeout=10, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        })
+
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("results") and len(data["results"]) > 0:
+                ativo = data["results"][0]
+                dividendos = ativo.get("dividendsData", [])
+                if dividendos:
+                    resultado = []
+                    for div in dividendos:
+                        resultado.append({
+                            "data": div.get("paymentDate", ""),
+                            "valor": round(float(div.get("value", 0)), 4),
+                        })
+                    return resultado, None
+    except Exception as e:
+        print(f"Erro na API Brapi dividendos: {e}")
+
+    # Fallback: Yahoo Finance
     try:
         import yfinance as yf
 
-        if not ticker.endswith(".SA"):
-            ticker_sa = f"{ticker}.SA"
-        else:
-            ticker_sa = ticker
-
-        ativo = yf.Ticker(ticker_sa)
+        ativo = yf.Ticker(f"{ticker}.SA")
         dividendos = ativo.dividends
 
-        if dividendos.empty:
-            return [], "Nenhum dividendo encontrado para este ativo"
+        if not dividendos.empty:
+            data_corte = datetime.now() - timedelta(days=365 if periodo == "1y" else 730)
+            dividendos_filtrados = dividendos[dividendos.index >= data_corte]
 
-        # Filtra pelo período
-        data_corte = datetime.now() - timedelta(days=365 if periodo == "1y" else 730)
-        dividendos_filtrados = dividendos[dividendos.index >= data_corte]
-
-        resultado = []
-        for data, valor in dividendos_filtrados.items():
-            resultado.append({
-                "data": data.strftime("%Y-%m-%d"),
-                "valor": round(float(valor), 4),
-            })
-
-        return resultado, None
+            resultado = []
+            for data, valor in dividendos_filtrados.items():
+                resultado.append({
+                    "data": data.strftime("%Y-%m-%d"),
+                    "valor": round(float(valor), 4),
+                })
+            return resultado, None
     except ImportError:
-        return [], "Biblioteca yfinance não instalada. Execute: pip install yfinance"
+        pass
     except Exception as e:
-        return [], f"Erro ao buscar dividendos: {str(e)}"
+        print(f"Erro na API Yahoo dividendos: {e}")
+
+    return [], "Nenhum dividendo encontrado para este ativo"
 
 
 # ============================================

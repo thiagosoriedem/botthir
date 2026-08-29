@@ -33,6 +33,7 @@ from modules.financas import (
     calcular_projecao_dividendos,
     buscar_cotacao_b3,
     buscar_dividendos_b3,
+    atualizar_cotacoes_investimentos,
 )
 
 
@@ -542,6 +543,12 @@ def get_b3_dividendos(ticker):
     if erro:
         return jsonify({"status": "error", "message": erro}), 400
     return jsonify({"status": "success", "dividendos": dividendos})
+
+# API GET: Atualiza cotações de todos os investimentos do usuário
+@app.route("/api/financas/<int:user_id>/investimentos/cotacoes", methods=["GET"])
+def get_user_cotacoes_investimentos(user_id):
+    cotacoes = atualizar_cotacoes_investimentos(user_id)
+    return jsonify({"status": "success", "cotacoes": cotacoes})
 
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def telegram_webhook():
