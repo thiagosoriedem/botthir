@@ -9,6 +9,7 @@ from modules.lembretes import get_tasks_keyboard
 from modules.financas import (
     salvar_transacao,
     obter_transacoes_usuario,
+    atualizar_transacao,
     excluir_transacao,
     obter_resumo_financeiro,
     obter_despesas_por_categoria,
@@ -43,6 +44,7 @@ from modules.financas import (
     calcular_projecao_dividendos,
     buscar_cotacao_b3,
     buscar_dividendos_b3,
+    buscar_dados_completos_b3,
     atualizar_cotacoes_investimentos,
 )
 
@@ -329,6 +331,26 @@ def get_user_transacoes(user_id):
     ano = request.args.get("ano")
     transacoes = obter_transacoes_usuario(user_id, mes, ano)
     return jsonify({"status": "success", "transacoes": transacoes})
+
+# API PUT: Atualiza uma transação
+@app.route("/api/financas/<int:user_id>/<transacao_id>", methods=["PUT"])
+def update_user_transacao(user_id, transacao_id):
+    data = request.get_json() or {}
+    atualizacoes = {}
+    if data.get("descricao"):
+        atualizacoes["descricao"] = data["descricao"]
+    if data.get("valor") is not None:
+        atualizacoes["valor"] = float(data["valor"])
+    if data.get("categoria"):
+        atualizacoes["categoria"] = data["categoria"]
+    if data.get("data"):
+        atualizacoes["data"] = data["data"]
+
+    if not atualizacoes:
+        return jsonify({"status": "error", "message": "Nada para atualizar"}), 400
+
+    sucesso, msg = atualizar_transacao(user_id, transacao_id, atualizacoes)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
 
 # API POST: Salva uma nova transação
 @app.route("/api/financas/<int:user_id>", methods=["POST"])
@@ -636,6 +658,14 @@ def get_b3_cotacao(ticker):
     if erro:
         return jsonify({"status": "error", "message": erro}), 400
     return jsonify({"status": "success", **cotacao})
+
+# API GET: Busca dados completos de ativo da B3 (taxa, dividendo, dia pagamento)
+@app.route("/api/b3/dados/<ticker>", methods=["GET"])
+def get_b3_dados_completos(ticker):
+    dados, erro = buscar_dados_completos_b3(ticker)
+    if erro:
+        return jsonify({"status": "error", "message": erro}), 400
+    return jsonify({"status": "success", **dados})
 
 # API GET: Busca histórico de dividendos de ativo da B3
 @app.route("/api/b3/dividendos/<ticker>", methods=["GET"])

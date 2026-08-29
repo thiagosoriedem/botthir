@@ -76,6 +76,25 @@ def obter_transacoes_usuario(user_id, mes=None, ano=None):
         return []
 
 
+def atualizar_transacao(user_id, transacao_id, dados_atualizados):
+    """Atualiza uma transação existente."""
+    if not db:
+        return False, "Database offline"
+
+    try:
+        doc_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("financas")
+            .document(transacao_id)
+        )
+        doc_ref.update(dados_atualizados)
+        return True, "Transação atualizada com sucesso!"
+    except Exception as e:
+        print(f"Erro ao atualizar transação: {e}")
+        return False, str(e)
+
+
 def excluir_transacao(user_id, transacao_id):
     """Remove uma transação financeira pelo ID."""
     if not db:
@@ -261,8 +280,22 @@ def excluir_despesa_fixa(user_id, despesa_id):
         return False, str(e)
 
 
+def _fixa_vigente_no_mes(item, mes, ano):
+    """Verifica se uma receita/despesa fixa está vigente no mês (respeita data_fim)."""
+    data_fim = item.get("data_fim", "")
+    if not data_fim:
+        return True
+    try:
+        fim = datetime.strptime(data_fim, "%Y-%m-%d")
+        return (ano, mes) <= (fim.year, fim.month)
+    except ValueError:
+        return True
+
+
 def obter_previsao_despesas(user_id, mes=None, ano=None):
-    """Calcula a previsão de despesas do mês baseado nas despesas fixas."""
+    """Calcula a previsão de despesas do mês baseado nas despesas fixas.
+    Despesas com dia de vencimento já passado no mês são consideradas 'vencidas'
+    (devem ser aplicadas imediatamente), não pendentes."""
     if mes is None:
         mes = datetime.now().month
     if ano is None:
@@ -277,12 +310,17 @@ def obter_previsao_despesas(user_id, mes=None, ano=None):
     ]
     total_registrado = sum(float(t.get("valor", 0)) for t in despesas_registradas)
 
-    # Despesas fixas que ainda vão vencer no mês
     hoje = datetime.now()
     despesas_pendentes = []
+    despesas_vencidas = []
     total_pendente = 0.0
+    total_vencido = 0.0
 
     for df in despesas_fixas:
+        # Verifica se a despesa fixa está vigente no mês (respeita data_fim)
+        if not _fixa_vigente_no_mes(df, mes, ano):
+            continue
+
         dia = df.get("dia_vencimento", 1)
         # Verifica se a despesa fixa já foi paga neste mês
         ja_paga = False
@@ -298,24 +336,33 @@ def obter_previsao_despesas(user_id, mes=None, ano=None):
 
         if not ja_paga:
             valor = float(df.get("valor", 0))
-            despesas_pendentes.append({
+            item = {
                 "id": df.get("id"),
                 "descricao": df.get("descricao"),
                 "valor": valor,
                 "dia_vencimento": dia,
                 "categoria": df.get("categoria", "Geral"),
-            })
-            total_pendente += valor
+            }
+            # Se o dia de vencimento já passou (ou é hoje), está vencida
+            if ano < hoje.year or (ano == hoje.year and (mes < hoje.month or (mes == hoje.month and dia <= hoje.day))):
+                item["vencida"] = True
+                despesas_vencidas.append(item)
+                total_vencido += valor
+            else:
+                despesas_pendentes.append(item)
+                total_pendente += valor
 
-    total_previsao = total_registrado + total_pendente
+    total_previsao = total_registrado + total_pendente + total_vencido
 
     return {
         "mes": mes,
         "ano": ano,
         "total_registrado": round(total_registrado, 2),
         "total_pendente": round(total_pendente, 2),
+        "total_vencido": round(total_vencido, 2),
         "total_previsao": round(total_previsao, 2),
         "despesas_pendentes": despesas_pendentes,
+        "despesas_vencidas": despesas_vencidas,
         "quantidade_fixas": len(despesas_fixas),
     }
 
@@ -483,13 +530,16 @@ def excluir_receita_fixa(user_id, receita_id):
 
 
 def obter_previsao_receitas(user_id, mes=None, ano=None):
-    """Calcula a previsão de receitas do mês baseado nas receitas fixas."""
+    """Calcula a previsão de receitas do mês (receitas fixas + dividendos).
+    Receitas com dia de recebimento já passado no mês são consideradas 'vencidas'
+    (devem ser aplicadas imediatamente), não pendentes."""
     if mes is None:
         mes = datetime.now().month
     if ano is None:
         ano = datetime.now().year
 
     receitas_fixas = obter_receitas_fixas(user_id, ativa=True)
+    dividendos = obter_dividendos(user_id)
     transacoes = obter_transacoes_usuario(user_id, mes, ano)
 
     # Receitas já registradas no mês
@@ -498,13 +548,19 @@ def obter_previsao_receitas(user_id, mes=None, ano=None):
     ]
     total_registrado = sum(float(t.get("valor", 0)) for t in receitas_registradas)
 
-    # Receitas fixas que ainda vão ser recebidas no mês
+    hoje = datetime.now()
     receitas_pendentes = []
+    receitas_vencidas = []
     total_pendente = 0.0
+    total_vencido = 0.0
 
+    # Receitas fixas
     for rf in receitas_fixas:
+        # Verifica se a receita fixa está vigente no mês (respeita data_fim)
+        if not _fixa_vigente_no_mes(rf, mes, ano):
+            continue
+
         dia = rf.get("dia_recebimento", 1)
-        # Verifica se a receita fixa já foi recebida neste mês
         ja_recebida = False
         for t in receitas_registradas:
             if t.get("descricao", "").lower() == rf.get("descricao", "").lower():
@@ -518,24 +574,78 @@ def obter_previsao_receitas(user_id, mes=None, ano=None):
 
         if not ja_recebida:
             valor = float(rf.get("valor", 0))
-            receitas_pendentes.append({
+            item = {
                 "id": rf.get("id"),
                 "descricao": rf.get("descricao"),
                 "valor": valor,
                 "dia_recebimento": dia,
                 "categoria": rf.get("categoria", "Salário"),
-            })
-            total_pendente += valor
+                "origem": "fixa",
+            }
+            if ano < hoje.year or (ano == hoje.year and (mes < hoje.month or (mes == hoje.month and dia <= hoje.day))):
+                item["vencida"] = True
+                receitas_vencidas.append(item)
+                total_vencido += valor
+            else:
+                receitas_pendentes.append(item)
+                total_pendente += valor
 
-    total_previsao = total_registrado + total_pendente
+    # Dividendos
+    for div in dividendos:
+        dia = int(div.get("dia_recebimento", 1))
+        frequencia = div.get("frequencia", "mensal")
+        descricao = div.get("descricao", "Dividendos")
+
+        # Verifica se o dividendo cai neste mês
+        recebe = False
+        if frequencia == "mensal":
+            recebe = True
+        elif frequencia == "trimestral":
+            recebe = (mes - 1) % 3 == 0
+        elif frequencia == "semestral":
+            recebe = (mes - 1) % 6 == 0
+        elif frequencia == "anual":
+            recebe = mes == 1
+
+        if not recebe:
+            continue
+
+        ja_recebido = False
+        for t in receitas_registradas:
+            if t.get("descricao", "").lower() == descricao.lower():
+                ja_recebido = True
+                break
+
+        if not ja_recebido:
+            valor = float(div.get("valor_estimado", 0))
+            item = {
+                "id": div.get("id"),
+                "descricao": descricao,
+                "valor": valor,
+                "dia_recebimento": dia,
+                "categoria": "Dividendos",
+                "origem": "dividendo",
+                "investimento": div.get("investimento_nome", ""),
+            }
+            if ano < hoje.year or (ano == hoje.year and (mes < hoje.month or (mes == hoje.month and dia <= hoje.day))):
+                item["vencida"] = True
+                receitas_vencidas.append(item)
+                total_vencido += valor
+            else:
+                receitas_pendentes.append(item)
+                total_pendente += valor
+
+    total_previsao = total_registrado + total_pendente + total_vencido
 
     return {
         "mes": mes,
         "ano": ano,
         "total_registrado": round(total_registrado, 2),
         "total_pendente": round(total_pendente, 2),
+        "total_vencido": round(total_vencido, 2),
         "total_previsao": round(total_previsao, 2),
         "receitas_pendentes": receitas_pendentes,
+        "receitas_vencidas": receitas_vencidas,
         "quantidade_fixas": len(receitas_fixas),
     }
 
@@ -1100,6 +1210,91 @@ def atualizar_cotacoes_investimentos(user_id):
             })
 
     return resultados
+
+
+def buscar_dados_completos_b3(ticker):
+    """Busca dados completos de um ativo da B3: cotação, dividend yield (taxa estimada),
+    último dividendo e dia de pagamento. Usa brapi.dev como fonte principal."""
+    import requests as req
+
+    ticker = ticker.upper().replace(".SA", "")
+    resultado = {
+        "ticker": ticker,
+        "preco_atual": 0,
+        "taxa_anual_estimada": 0,
+        "ultimo_dividendo": 0,
+        "data_ultimo_dividendo": "",
+        "dia_pagamento": 0,
+        "fonte": "",
+    }
+
+    # 1. Tenta brapi.dev (tem dividend yield e histórico de dividendos)
+    try:
+        url = f"https://brapi.dev/api/quote/{ticker}?token="
+        response = req.get(url, timeout=10, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        })
+
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("results") and len(data["results"]) > 0:
+                ativo = data["results"][0]
+                resultado["preco_atual"] = float(ativo.get("regularMarketPrice", 0) or 0)
+                # Dividend yield anual é a taxa estimada
+                dy = float(ativo.get("dividendYield", 0) or 0)
+                resultado["taxa_anual_estimada"] = round(dy, 2)
+                resultado["fonte"] = "Brapi"
+    except Exception as e:
+        print(f"Erro na API Brapi dados completos: {e}")
+
+    # 2. Busca histórico de dividendos para último valor e dia de pagamento
+    dividendos_hist, _ = buscar_dividendos_b3(ticker)
+    if dividendos_hist:
+        ultimo = dividendos_hist[-1]  # Mais recente
+        resultado["ultimo_dividendo"] = float(ultimo.get("valor", 0))
+        data_div = ultimo.get("data", "")
+        resultado["data_ultimo_dividendo"] = data_div
+        # Extrai o dia de pagamento
+        if data_div:
+            try:
+                resultado["dia_pagamento"] = int(data_div.split("-")[2])
+            except (ValueError, IndexError):
+                pass
+
+    # 3. Se brapi falhou, tenta Yahoo para cotação e dividendos
+    if resultado["preco_atual"] == 0:
+        try:
+            import yfinance as yf
+
+            ativo = yf.Ticker(f"{ticker}.SA")
+            hist = ativo.history(period="5d")
+            if not hist.empty:
+                resultado["preco_atual"] = round(float(hist["Close"].iloc[-1]), 2)
+                resultado["fonte"] = "Yahoo"
+
+            dividendos = ativo.dividends
+            if not dividendos.empty:
+                # Últimos 12 meses de dividendos para estimar taxa anual
+                data_corte = datetime.now() - timedelta(days=365)
+                div_12m = dividendos[dividendos.index >= data_corte]
+                total_12m = float(div_12m.sum()) if not div_12m.empty else 0
+
+                if resultado["preco_atual"] > 0 and total_12m > 0:
+                    resultado["taxa_anual_estimada"] = round((total_12m / resultado["preco_atual"]) * 100, 2)
+
+                ultimo_div = dividendos.iloc[-1]
+                resultado["ultimo_dividendo"] = round(float(ultimo_div), 4)
+                data_ultimo = dividendos.index[-1]
+                resultado["data_ultimo_dividendo"] = data_ultimo.strftime("%Y-%m-%d")
+                resultado["dia_pagamento"] = data_ultimo.day
+        except ImportError:
+            pass
+        except Exception as e:
+            print(f"Erro na API Yahoo dados completos: {e}")
+
+    if resultado["preco_atual"] > 0:
+        return resultado, None
+    return None, f"Não foi possível buscar dados de {ticker}"
 
 
 def buscar_dividendos_b3(ticker, periodo="1y"):

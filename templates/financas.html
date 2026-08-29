@@ -17,8 +17,8 @@
             --surface: var(--tg-theme-secondary-bg-color, #ffffff);
             --text: var(--tg-theme-text-color, #0f172a);
             --muted: var(--tg-theme-hint-color, #94a3b8);
-            --primary: var(--tg-theme-button-color, #d64550);
-            --primary-text: var(--tg-theme-button-text-color, #ffffff);
+            --primary: #d64550;
+            --primary-text: #ffffff;
             --primary-soft: rgba(214, 69, 80, 0.12);
             --green: #10b981;
             --red: #ef4444;
@@ -715,6 +715,15 @@
 
             <div class="card">
                 <div class="card-header">
+                    <span class="card-title">Receitas vs Despesas</span>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="grafico-transacoes"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
                     <span class="card-title">Todas as Transações</span>
                 </div>
                 <div id="lista-transacoes"></div>
@@ -870,7 +879,12 @@
                 </div>
                 <div class="form-group">
                     <label>Taxa Anual Estimada (%)</label>
-                    <input type="number" id="input-inv-taxa" placeholder="Ex: 10.5" step="0.01">
+                    <div style="display: flex; gap: 8px;">
+                        <input type="number" id="input-inv-taxa" placeholder="Ex: 10.5" step="0.01" style="flex: 1;">
+                        <button class="btn btn-sm btn-blue" onclick="buscarDadosB3Form()" title="Buscar taxa e dividendos na B3">
+                            <i data-lucide="search"></i> B3
+                        </button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Data de Início</label>
@@ -969,6 +983,9 @@
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">Dividendos Programados</span>
+                    <button class="btn btn-sm btn-green" onclick="aplicarDividendosReceita()">
+                        <i data-lucide="zap"></i> Aplicar
+                    </button>
                 </div>
                 <div id="lista-dividendos"></div>
             </div>
@@ -1027,6 +1044,7 @@
         let anoAtual = new Date().getFullYear();
         let tipoTransacaoForm = 'despesa';
         let graficoCategorias = null;
+        let graficoTransacoes = null;
 
         const MESES = [
             'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -1257,6 +1275,9 @@
                             </div>
                             <div class="item-value ${t.tipo}">${t.tipo === 'receita' ? '+' : '-'}${formatarMoeda(t.valor)}</div>
                             <div class="item-actions">
+                                <button class="icon-btn" onclick="editarTransacao('${t.id}', '${t.tipo}', '${t.descricao}', ${t.valor}, '${t.categoria}', '${t.data}')">
+                                    <i data-lucide="pencil"></i>
+                                </button>
                                 <button class="icon-btn danger" onclick="deletarTransacao('${t.id}')">
                                     <i data-lucide="trash-2"></i>
                                 </button>
@@ -1267,13 +1288,105 @@
                     lista.innerHTML = '<div class="empty"><i data-lucide="inbox"></i><br>Nenhuma transação neste mês.</div>';
                 }
                 lucide.createIcons();
+
+                renderizarGraficoTransacoes(result.transacoes || []);
             } catch (err) {
                 console.error('Erro ao carregar transações:', err);
                 mostrarToast('Erro ao carregar transações');
             }
         }
 
+        function renderizarGraficoTransacoes(transacoes) {
+            const ctx = document.getElementById('grafico-transacoes').getContext('2d');
+
+            if (graficoTransacoes) graficoTransacoes.destroy();
+
+            const totalReceitas = transacoes
+                .filter(t => t.tipo === 'receita')
+                .reduce((sum, t) => sum + parseFloat(t.valor || 0), 0);
+            const totalDespesas = transacoes
+                .filter(t => t.tipo === 'despesa')
+                .reduce((sum, t) => sum + parseFloat(t.valor || 0), 0);
+
+            graficoTransacoes = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Receitas', 'Despesas'],
+                    datasets: [{
+                        data: [totalReceitas, totalDespesas],
+                        backgroundColor: ['var(--green)', 'var(--red)'],
+                        borderWidth: 0,
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return formatarMoeda(ctx.parsed.x);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false },
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        let transacaoEmEdicao = null;
+
+        function editarTransacao(transacaoId, tipo, descricao, valor, categoria, data) {
+            transacaoEmEdicao = transacaoId;
+            tipoTransacaoForm = tipo;
+            document.getElementById('form-transacao-titulo').textContent =
+                tipo === 'receita' ? 'Editar Receita' : 'Editar Despesa';
+            document.getElementById('input-descricao').value = descricao;
+            document.getElementById('input-valor').value = valor;
+            document.getElementById('input-data').value = data;
+
+            const select = document.getElementById('input-categoria');
+            select.innerHTML = tipo === 'receita'
+                ? `
+                    <option value="Salário">Salário</option>
+                    <option value="Investimentos">Investimentos</option>
+                    <option value="Freelance">Freelance</option>
+                    <option value="Dividendos">Dividendos</option>
+                    <option value="Outros">Outros</option>
+                `
+                : `
+                    <option value="Alimentação">Alimentação</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Moradia">Moradia</option>
+                    <option value="Saúde">Saúde</option>
+                    <option value="Educação">Educação</option>
+                    <option value="Lazer">Lazer</option>
+                    <option value="Assinaturas">Assinaturas</option>
+                    <option value="Outros">Outros</option>
+                `;
+            select.value = categoria;
+
+            document.getElementById('form-transacao').classList.remove('hidden');
+        }
+
         function abrirFormTransacao(tipo) {
+            transacaoEmEdicao = null;
             tipoTransacaoForm = tipo;
             document.getElementById('form-transacao-titulo').textContent =
                 tipo === 'receita' ? 'Nova Receita' : 'Nova Despesa';
@@ -1320,8 +1433,13 @@
             }
 
             try {
-                const response = await fetch(`/api/financas/${userId}`, {
-                    method: 'POST',
+                const url = transacaoEmEdicao
+                    ? `/api/financas/${userId}/${transacaoEmEdicao}`
+                    : `/api/financas/${userId}`;
+                const method = transacaoEmEdicao ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         tipo: tipoTransacaoForm,
@@ -1334,7 +1452,8 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('Transação salva!');
+                    mostrarToast(transacaoEmEdicao ? 'Transação atualizada!' : 'Transação salva!');
+                    transacaoEmEdicao = null;
                     fecharFormTransacao();
                     carregarTransacoes();
                     carregarDashboard();
@@ -1387,6 +1506,9 @@
                             </div>
                             <div class="item-value despesa">${formatarMoeda(df.valor)}</div>
                             <div class="item-actions">
+                                <button class="icon-btn" onclick="editarDespesaFixa('${df.id}')">
+                                    <i data-lucide="pencil"></i>
+                                </button>
                                 <button class="icon-btn" onclick="toggleDespesaFixa('${df.id}')">
                                     <i data-lucide="${df.ativa ? 'pause' : 'play'}"></i>
                                 </button>
@@ -1406,11 +1528,33 @@
             }
         }
 
+        let despesaFixaEmEdicao = null;
+
         function abrirFormDespesaFixa() {
+            despesaFixaEmEdicao = null;
+            document.getElementById('form-despesa-fixa-titulo').textContent = 'Nova Despesa Fixa';
             document.getElementById('input-fixa-descricao').value = '';
             document.getElementById('input-fixa-valor').value = '';
             document.getElementById('input-fixa-dia').value = '';
+            document.getElementById('input-fixa-data-fim').value = '';
             document.getElementById('form-despesa-fixa').classList.remove('hidden');
+        }
+
+        function editarDespesaFixa(despesaId) {
+            fetch(`/api/financas/${userId}/despesas-fixas`)
+                .then(r => r.json())
+                .then(result => {
+                    const df = result.despesas_fixas.find(d => d.id === despesaId);
+                    if (!df) return;
+                    despesaFixaEmEdicao = despesaId;
+                    document.getElementById('form-despesa-fixa-titulo').textContent = 'Editar Despesa Fixa';
+                    document.getElementById('input-fixa-descricao').value = df.descricao;
+                    document.getElementById('input-fixa-valor').value = df.valor;
+                    document.getElementById('input-fixa-dia').value = df.dia_vencimento;
+                    document.getElementById('input-fixa-categoria').value = df.categoria;
+                    document.getElementById('input-fixa-data-fim').value = df.data_fim || '';
+                    document.getElementById('form-despesa-fixa').classList.remove('hidden');
+                });
         }
 
         function fecharFormDespesaFixa() {
@@ -1429,8 +1573,13 @@
             }
 
             try {
-                const response = await fetch(`/api/financas/${userId}/despesas-fixas`, {
-                    method: 'POST',
+                const url = despesaFixaEmEdicao
+                    ? `/api/financas/${userId}/despesas-fixas/${despesaFixaEmEdicao}`
+                    : `/api/financas/${userId}/despesas-fixas`;
+                const method = despesaFixaEmEdicao ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         descricao: descricao,
@@ -1442,7 +1591,8 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('Despesa fixa salva!');
+                    mostrarToast(despesaFixaEmEdicao ? 'Despesa fixa atualizada!' : 'Despesa fixa salva!');
+                    despesaFixaEmEdicao = null;
                     fecharFormDespesaFixa();
                     carregarDespesasFixas();
                     carregarDashboard();
@@ -1456,7 +1606,7 @@
 
         async function toggleDespesaFixa(despesaId) {
             try {
-                const response = await fetch(`/api/financas/${userId}/despesas-fixas/${despesaId}`, {
+                const response = await fetch(`/api/financas/${userId}/despesas-fixas/${despesaId}/toggle`, {
                     method: 'PUT'
                 });
                 const result = await response.json();
@@ -1533,6 +1683,9 @@
                                 </div>
                                 <div class="item-value receita">${formatarMoeda(rf.valor)}</div>
                                 <div class="item-actions">
+                                    <button class="icon-btn" onclick="editarReceitaFixa('${rf.id}')">
+                                        <i data-lucide="pencil"></i>
+                                    </button>
                                     <button class="icon-btn" onclick="toggleReceitaFixa('${rf.id}')">
                                         <i data-lucide="${rf.ativa ? 'pause' : 'play'}"></i>
                                     </button>
@@ -1552,12 +1705,33 @@
             }
         }
 
+        let receitaFixaEmEdicao = null;
+
         function abrirFormReceitaFixa() {
+            receitaFixaEmEdicao = null;
+            document.getElementById('form-receita-fixa-titulo').textContent = 'Nova Receita Fixa';
             document.getElementById('input-receita-fixa-descricao').value = '';
             document.getElementById('input-receita-fixa-valor').value = '';
             document.getElementById('input-receita-fixa-dia').value = '';
             document.getElementById('input-receita-fixa-data-fim').value = '';
             document.getElementById('form-receita-fixa').classList.remove('hidden');
+        }
+
+        function editarReceitaFixa(receitaId) {
+            fetch(`/api/financas/${userId}/receitas-fixas`)
+                .then(r => r.json())
+                .then(result => {
+                    const rf = result.receitas_fixas.find(r => r.id === receitaId);
+                    if (!rf) return;
+                    receitaFixaEmEdicao = receitaId;
+                    document.getElementById('form-receita-fixa-titulo').textContent = 'Editar Receita Fixa';
+                    document.getElementById('input-receita-fixa-descricao').value = rf.descricao;
+                    document.getElementById('input-receita-fixa-valor').value = rf.valor;
+                    document.getElementById('input-receita-fixa-dia').value = rf.dia_recebimento;
+                    document.getElementById('input-receita-fixa-categoria').value = rf.categoria;
+                    document.getElementById('input-receita-fixa-data-fim').value = rf.data_fim || '';
+                    document.getElementById('form-receita-fixa').classList.remove('hidden');
+                });
         }
 
         function fecharFormReceitaFixa() {
@@ -1577,8 +1751,13 @@
             }
 
             try {
-                const response = await fetch(`/api/financas/${userId}/receitas-fixas`, {
-                    method: 'POST',
+                const url = receitaFixaEmEdicao
+                    ? `/api/financas/${userId}/receitas-fixas/${receitaFixaEmEdicao}`
+                    : `/api/financas/${userId}/receitas-fixas`;
+                const method = receitaFixaEmEdicao ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         descricao: descricao,
@@ -1591,7 +1770,8 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mostrarToast('Receita fixa salva!');
+                    mostrarToast(receitaFixaEmEdicao ? 'Receita fixa atualizada!' : 'Receita fixa salva!');
+                    receitaFixaEmEdicao = null;
                     fecharFormReceitaFixa();
                     carregarReceitasFixas();
                     carregarDashboard();
@@ -1899,6 +2079,31 @@
             } catch (err) {
                 console.error('Erro ao buscar B3:', err);
                 resultadoEl.innerHTML = '<div class="empty">Erro ao buscar cotação.</div>';
+            }
+        }
+
+        async function buscarDadosB3Form() {
+            const ticker = document.getElementById('input-inv-nome').value.trim().toUpperCase();
+            if (!ticker) {
+                mostrarToast('Digite o ticker do investimento!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/b3/cotacao/${ticker}`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    if (result.dividend_yield && !document.getElementById('input-inv-taxa').value) {
+                        document.getElementById('input-inv-taxa').value = result.dividend_yield;
+                    }
+                    mostrarToast(`Dados de ${result.ticker} carregados! DY: ${result.dividend_yield}%`);
+                } else {
+                    mostrarToast(result.message);
+                }
+            } catch (err) {
+                console.error('Erro ao buscar dados B3:', err);
+                mostrarToast('Erro ao buscar dados na B3');
             }
         }
 
