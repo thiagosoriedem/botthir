@@ -18,10 +18,18 @@ from modules.financas import (
     excluir_meta_financeira,
     salvar_despesa_fixa,
     obter_despesas_fixas,
+    atualizar_despesa_fixa,
     alternar_despesa_fixa,
     excluir_despesa_fixa,
     obter_previsao_despesas,
     aplicar_despesas_fixas,
+    salvar_receita_fixa,
+    obter_receitas_fixas,
+    atualizar_receita_fixa,
+    alternar_receita_fixa,
+    excluir_receita_fixa,
+    obter_previsao_receitas,
+    aplicar_receitas_fixas,
     salvar_investimento,
     obter_investimentos,
     atualizar_investimento,
@@ -29,7 +37,9 @@ from modules.financas import (
     calcular_crescimento_investimento,
     salvar_dividendo,
     obter_dividendos,
+    atualizar_dividendo,
     excluir_dividendo,
+    aplicar_dividendos_como_receita,
     calcular_projecao_dividendos,
     buscar_cotacao_b3,
     buscar_dividendos_b3,
@@ -422,8 +432,15 @@ def add_user_despesa_fixa(user_id):
     sucesso, msg = salvar_despesa_fixa(user_id, descricao, valor, dia_vencimento, categoria)
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
 
-# API PUT: Ativa/desativa despesa fixa
+# API PUT: Atualiza despesa fixa
 @app.route("/api/financas/<int:user_id>/despesas-fixas/<despesa_id>", methods=["PUT"])
+def update_user_despesa_fixa(user_id, despesa_id):
+    data = request.get_json() or {}
+    sucesso, msg = atualizar_despesa_fixa(user_id, despesa_id, data)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API PUT: Ativa/desativa despesa fixa
+@app.route("/api/financas/<int:user_id>/despesas-fixas/<despesa_id>/toggle", methods=["PUT"])
 def toggle_user_despesa_fixa(user_id, despesa_id):
     sucesso, msg = alternar_despesa_fixa(user_id, despesa_id)
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
@@ -448,6 +465,65 @@ def apply_user_despesas_fixas(user_id):
     mes = request.args.get("mes")
     ano = request.args.get("ano")
     aplicadas = aplicar_despesas_fixas(user_id, mes, ano)
+    return jsonify({"status": "success", "aplicadas": aplicadas})
+
+# ===== API DE RECEITAS FIXAS =====
+
+# API GET: Lista receitas fixas
+@app.route("/api/financas/<int:user_id>/receitas-fixas", methods=["GET"])
+def get_user_receitas_fixas(user_id):
+    receitas = obter_receitas_fixas(user_id)
+    return jsonify({"status": "success", "receitas_fixas": receitas})
+
+# API POST: Salva uma nova receita fixa
+@app.route("/api/financas/<int:user_id>/receitas-fixas", methods=["POST"])
+def add_user_receita_fixa(user_id):
+    data = request.get_json() or {}
+    descricao = data.get("descricao")
+    valor = data.get("valor")
+    dia_recebimento = data.get("dia_recebimento")
+    categoria = data.get("categoria", "Salário")
+    data_fim = data.get("data_fim", "")
+
+    if not descricao or not valor or not dia_recebimento:
+        return jsonify({"status": "error", "message": "Dados incompletos"}), 400
+
+    sucesso, msg = salvar_receita_fixa(user_id, descricao, valor, dia_recebimento, categoria, True, data_fim)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API PUT: Atualiza receita fixa
+@app.route("/api/financas/<int:user_id>/receitas-fixas/<receita_id>", methods=["PUT"])
+def update_user_receita_fixa(user_id, receita_id):
+    data = request.get_json() or {}
+    sucesso, msg = atualizar_receita_fixa(user_id, receita_id, data)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API PUT: Ativa/desativa receita fixa
+@app.route("/api/financas/<int:user_id>/receitas-fixas/<receita_id>/toggle", methods=["PUT"])
+def toggle_user_receita_fixa(user_id, receita_id):
+    sucesso, msg = alternar_receita_fixa(user_id, receita_id)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API DELETE: Exclui receita fixa
+@app.route("/api/financas/<int:user_id>/receitas-fixas/<receita_id>", methods=["DELETE"])
+def delete_user_receita_fixa(user_id, receita_id):
+    sucesso, msg = excluir_receita_fixa(user_id, receita_id)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API GET: Previsão de receitas do mês
+@app.route("/api/financas/<int:user_id>/previsao-receitas", methods=["GET"])
+def get_user_previsao_receitas(user_id):
+    mes = request.args.get("mes")
+    ano = request.args.get("ano")
+    previsao = obter_previsao_receitas(user_id, mes, ano)
+    return jsonify({"status": "success", **previsao})
+
+# API POST: Aplica receitas fixas do mês como transações
+@app.route("/api/financas/<int:user_id>/aplicar-receitas-fixas", methods=["POST"])
+def apply_user_receitas_fixas(user_id):
+    mes = request.args.get("mes")
+    ano = request.args.get("ano")
+    aplicadas = aplicar_receitas_fixas(user_id, mes, ano)
     return jsonify({"status": "success", "aplicadas": aplicadas})
 
 # ===== API DE INVESTIMENTOS =====
@@ -523,11 +599,26 @@ def add_user_dividendo(user_id):
     )
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
 
+# API PUT: Atualiza dividendo
+@app.route("/api/financas/<int:user_id>/dividendos/<dividendo_id>", methods=["PUT"])
+def update_user_dividendo(user_id, dividendo_id):
+    data = request.get_json() or {}
+    sucesso, msg = atualizar_dividendo(user_id, dividendo_id, data)
+    return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
 # API DELETE: Exclui dividendo
 @app.route("/api/financas/<int:user_id>/dividendos/<dividendo_id>", methods=["DELETE"])
 def delete_user_dividendo(user_id, dividendo_id):
     sucesso, msg = excluir_dividendo(user_id, dividendo_id)
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
+
+# API POST: Aplica dividendos do mês como receitas
+@app.route("/api/financas/<int:user_id>/dividendos/aplicar", methods=["POST"])
+def apply_user_dividendos_receita(user_id):
+    mes = request.args.get("mes")
+    ano = request.args.get("ano")
+    aplicados = aplicar_dividendos_como_receita(user_id, mes, ano)
+    return jsonify({"status": "success", "aplicados": aplicados})
 
 # API GET: Projeção de dividendos
 @app.route("/api/financas/<int:user_id>/dividendos/projecao", methods=["GET"])

@@ -141,7 +141,7 @@ def obter_despesas_por_categoria(user_id, mes=None, ano=None):
 # DESPESAS FIXAS
 # ============================================
 
-def salvar_despesa_fixa(user_id, descricao, valor, dia_vencimento, categoria="Geral", ativa=True):
+def salvar_despesa_fixa(user_id, descricao, valor, dia_vencimento, categoria="Geral", ativa=True, data_fim=None):
     """Salva uma despesa fixa recorrente (ex: aluguel todo dia 5)."""
     if not db:
         return False, "Database offline"
@@ -160,6 +160,7 @@ def salvar_despesa_fixa(user_id, descricao, valor, dia_vencimento, categoria="Ge
             "dia_vencimento": int(dia_vencimento),
             "categoria": categoria,
             "ativa": ativa,
+            "data_fim": data_fim or "",  # Data opcional de término (YYYY-MM-DD) ou "" para indeterminada
             "criado_em": datetime.now(),
         }
 
@@ -167,6 +168,25 @@ def salvar_despesa_fixa(user_id, descricao, valor, dia_vencimento, categoria="Ge
         return True, "Despesa fixa salva com sucesso!"
     except Exception as e:
         print(f"Erro ao salvar despesa fixa no Firebase: {e}")
+        return False, str(e)
+
+
+def atualizar_despesa_fixa(user_id, despesa_id, dados_atualizados):
+    """Atualiza uma despesa fixa existente."""
+    if not db:
+        return False, "Database offline"
+
+    try:
+        doc_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("despesas_fixas")
+            .document(despesa_id)
+        )
+        doc_ref.update(dados_atualizados)
+        return True, "Despesa fixa atualizada com sucesso!"
+    except Exception as e:
+        print(f"Erro ao atualizar despesa fixa: {e}")
         return False, str(e)
 
 
@@ -332,6 +352,226 @@ def aplicar_despesas_fixas(user_id, mes=None, ano=None):
                 df.get("valor", 0),
                 df.get("categoria", "Geral"),
                 data_vencimento,
+            )
+            aplicadas += 1
+
+    return aplicadas
+
+
+# ============================================
+# RECEITAS FIXAS
+# ============================================
+
+def salvar_receita_fixa(user_id, descricao, valor, dia_recebimento, categoria="Salário", ativa=True, data_fim=None):
+    """Salva uma receita fixa recorrente (ex: salário todo dia 5)."""
+    if not db:
+        return False, "Database offline"
+
+    try:
+        doc_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("receitas_fixas")
+            .document()
+        )
+
+        receita_data = {
+            "descricao": descricao,
+            "valor": float(valor),
+            "dia_recebimento": int(dia_recebimento),
+            "categoria": categoria,
+            "ativa": ativa,
+            "data_fim": data_fim or "",  # Data opcional de término (YYYY-MM-DD) ou "" para indeterminada
+            "criado_em": datetime.now(),
+        }
+
+        doc_ref.set(receita_data)
+        return True, "Receita fixa salva com sucesso!"
+    except Exception as e:
+        print(f"Erro ao salvar receita fixa no Firebase: {e}")
+        return False, str(e)
+
+
+def obter_receitas_fixas(user_id, ativa=None):
+    """Retorna todas as receitas fixas do usuário."""
+    if not db:
+        return []
+
+    try:
+        receitas_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("receitas_fixas")
+            .stream()
+        )
+
+        receitas = []
+        for doc in receitas_ref:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            if ativa is not None and data.get("ativa", True) != ativa:
+                continue
+            receitas.append(data)
+
+        # Ordena por dia de recebimento
+        receitas.sort(key=lambda x: x.get("dia_recebimento", 1))
+        return receitas
+    except Exception as e:
+        print(f"Erro ao buscar receitas fixas no Firebase: {e}")
+        return []
+
+
+def atualizar_receita_fixa(user_id, receita_id, dados_atualizados):
+    """Atualiza uma receita fixa existente."""
+    if not db:
+        return False, "Database offline"
+
+    try:
+        doc_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("receitas_fixas")
+            .document(receita_id)
+        )
+        doc_ref.update(dados_atualizados)
+        return True, "Receita fixa atualizada com sucesso!"
+    except Exception as e:
+        print(f"Erro ao atualizar receita fixa: {e}")
+        return False, str(e)
+
+
+def alternar_receita_fixa(user_id, receita_id):
+    """Ativa/desativa uma receita fixa."""
+    if not db:
+        return False, "Database offline"
+
+    try:
+        doc_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("receitas_fixas")
+            .document(receita_id)
+        )
+        doc = doc_ref.get()
+        if doc.exists:
+            ativa_atual = doc.to_dict().get("ativa", True)
+            doc_ref.update({"ativa": not ativa_atual})
+            return True, "Receita fixa atualizada!"
+        return False, "Receita fixa não encontrada"
+    except Exception as e:
+        print(f"Erro ao alternar receita fixa: {e}")
+        return False, str(e)
+
+
+def excluir_receita_fixa(user_id, receita_id):
+    """Remove uma receita fixa."""
+    if not db:
+        return False, "Database offline"
+
+    try:
+        doc_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("receitas_fixas")
+            .document(receita_id)
+        )
+        doc_ref.delete()
+        return True, "Receita fixa excluída com sucesso!"
+    except Exception as e:
+        print(f"Erro ao excluir receita fixa: {e}")
+        return False, str(e)
+
+
+def obter_previsao_receitas(user_id, mes=None, ano=None):
+    """Calcula a previsão de receitas do mês baseado nas receitas fixas."""
+    if mes is None:
+        mes = datetime.now().month
+    if ano is None:
+        ano = datetime.now().year
+
+    receitas_fixas = obter_receitas_fixas(user_id, ativa=True)
+    transacoes = obter_transacoes_usuario(user_id, mes, ano)
+
+    # Receitas já registradas no mês
+    receitas_registradas = [
+        t for t in transacoes if t.get("tipo") == "receita"
+    ]
+    total_registrado = sum(float(t.get("valor", 0)) for t in receitas_registradas)
+
+    # Receitas fixas que ainda vão ser recebidas no mês
+    receitas_pendentes = []
+    total_pendente = 0.0
+
+    for rf in receitas_fixas:
+        dia = rf.get("dia_recebimento", 1)
+        # Verifica se a receita fixa já foi recebida neste mês
+        ja_recebida = False
+        for t in receitas_registradas:
+            if t.get("descricao", "").lower() == rf.get("descricao", "").lower():
+                try:
+                    dt = datetime.strptime(t.get("data", ""), "%Y-%m-%d")
+                    if dt.month == mes and dt.year == ano:
+                        ja_recebida = True
+                        break
+                except ValueError:
+                    pass
+
+        if not ja_recebida:
+            valor = float(rf.get("valor", 0))
+            receitas_pendentes.append({
+                "id": rf.get("id"),
+                "descricao": rf.get("descricao"),
+                "valor": valor,
+                "dia_recebimento": dia,
+                "categoria": rf.get("categoria", "Salário"),
+            })
+            total_pendente += valor
+
+    total_previsao = total_registrado + total_pendente
+
+    return {
+        "mes": mes,
+        "ano": ano,
+        "total_registrado": round(total_registrado, 2),
+        "total_pendente": round(total_pendente, 2),
+        "total_previsao": round(total_previsao, 2),
+        "receitas_pendentes": receitas_pendentes,
+        "quantidade_fixas": len(receitas_fixas),
+    }
+
+
+def aplicar_receitas_fixas(user_id, mes=None, ano=None):
+    """Aplica automaticamente as receitas fixas do mês como transações."""
+    if mes is None:
+        mes = datetime.now().month
+    if ano is None:
+        ano = datetime.now().year
+
+    receitas_fixas = obter_receitas_fixas(user_id, ativa=True)
+    transacoes = obter_transacoes_usuario(user_id, mes, ano)
+    receitas_registradas = [
+        t for t in transacoes if t.get("tipo") == "receita"
+    ]
+
+    aplicadas = 0
+    for rf in receitas_fixas:
+        dia = rf.get("dia_recebimento", 1)
+        # Verifica se já foi aplicada
+        ja_aplicada = False
+        for t in receitas_registradas:
+            if t.get("descricao", "").lower() == rf.get("descricao", "").lower():
+                ja_aplicada = True
+                break
+
+        if not ja_aplicada:
+            data_recebimento = f"{ano:04d}-{mes:02d}-{dia:02d}"
+            salvar_transacao(
+                user_id,
+                "receita",
+                rf.get("descricao", "Receita Fixa"),
+                rf.get("valor", 0),
+                rf.get("categoria", "Salário"),
+                data_recebimento,
             )
             aplicadas += 1
 
@@ -572,6 +812,25 @@ def obter_dividendos(user_id):
         return []
 
 
+def atualizar_dividendo(user_id, dividendo_id, dados_atualizados):
+    """Atualiza um dividendo programado existente."""
+    if not db:
+        return False, "Database offline"
+
+    try:
+        doc_ref = (
+            db.collection("users")
+            .document(str(user_id))
+            .collection("dividendos")
+            .document(dividendo_id)
+        )
+        doc_ref.update(dados_atualizados)
+        return True, "Dividendo atualizado com sucesso!"
+    except Exception as e:
+        print(f"Erro ao atualizar dividendo: {e}")
+        return False, str(e)
+
+
 def excluir_dividendo(user_id, dividendo_id):
     """Remove um dividendo programado."""
     if not db:
@@ -589,6 +848,62 @@ def excluir_dividendo(user_id, dividendo_id):
     except Exception as e:
         print(f"Erro ao excluir dividendo: {e}")
         return False, str(e)
+
+
+def aplicar_dividendos_como_receita(user_id, mes=None, ano=None):
+    """Contabiliza automaticamente os dividendos do mês como receitas."""
+    if mes is None:
+        mes = datetime.now().month
+    if ano is None:
+        ano = datetime.now().year
+
+    dividendos = obter_dividendos(user_id)
+    transacoes = obter_transacoes_usuario(user_id, mes, ano)
+    receitas_registradas = [
+        t for t in transacoes if t.get("tipo") == "receita"
+    ]
+
+    aplicados = 0
+    for div in dividendos:
+        valor = float(div.get("valor_estimado", 0))
+        dia = int(div.get("dia_recebimento", 1))
+        frequencia = div.get("frequencia", "mensal")
+        descricao = div.get("descricao", "Dividendos")
+
+        # Verifica se o dividendo cai neste mês
+        recebe = False
+        if frequencia == "mensal":
+            recebe = True
+        elif frequencia == "trimestral":
+            recebe = (mes - 1) % 3 == 0
+        elif frequencia == "semestral":
+            recebe = (mes - 1) % 6 == 0
+        elif frequencia == "anual":
+            recebe = mes == 1
+
+        if not recebe:
+            continue
+
+        # Verifica se já foi contabilizado
+        ja_aplicado = False
+        for t in receitas_registradas:
+            if t.get("descricao", "").lower() == descricao.lower():
+                ja_aplicado = True
+                break
+
+        if not ja_aplicado:
+            data_recebimento = f"{ano:04d}-{mes:02d}-{dia:02d}"
+            salvar_transacao(
+                user_id,
+                "receita",
+                descricao,
+                valor,
+                "Dividendos",
+                data_recebimento,
+            )
+            aplicados += 1
+
+    return aplicados
 
 
 def calcular_projecao_dividendos(user_id, meses=12):

@@ -706,15 +706,60 @@
             </div>
         </div>
 
-        <!-- ===== DESPESAS FIXAS ===== -->
+        <!-- ===== RECEITAS & DESPESAS FIXAS ===== -->
         <div id="aba-fixas" class="hidden">
-            <button class="btn btn-amber btn-block" onclick="abrirFormDespesaFixa()">
-                <i data-lucide="repeat"></i> Nova Despesa Fixa
-            </button>
+            <div class="btn-group">
+                <button class="btn btn-green" onclick="abrirFormReceitaFixa()">
+                    <i data-lucide="trending-up"></i> Receita Fixa
+                </button>
+                <button class="btn btn-amber" onclick="abrirFormDespesaFixa()">
+                    <i data-lucide="repeat"></i> Despesa Fixa
+                </button>
+            </div>
 
+            <!-- FORMULÁRIO DE RECEITA FIXA -->
+            <div id="form-receita-fixa" class="card hidden">
+                <div class="card-header">
+                    <span class="card-title" id="form-receita-fixa-titulo">Nova Receita Fixa</span>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="input-receita-fixa-descricao" placeholder="Ex: Salário, Aluguel recebido...">
+                </div>
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="number" id="input-receita-fixa-valor" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Dia de Recebimento</label>
+                    <input type="number" id="input-receita-fixa-dia" placeholder="Ex: 5" min="1" max="31">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="input-receita-fixa-categoria">
+                        <option value="Salário">Salário</option>
+                        <option value="Freelance">Freelance</option>
+                        <option value="Aluguel">Aluguel</option>
+                        <option value="Investimentos">Investimentos</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Até quando? (opcional - deixe vazio para indeterminado)</label>
+                    <input type="date" id="input-receita-fixa-data-fim">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-green" onclick="salvarReceitaFixa()">
+                        <i data-lucide="check"></i> Salvar
+                    </button>
+                    <button class="btn btn-gray" onclick="fecharFormReceitaFixa()">Cancelar</button>
+                </div>
+            </div>
+
+            <!-- FORMULÁRIO DE DESPESA FIXA -->
             <div id="form-despesa-fixa" class="card hidden">
                 <div class="card-header">
-                    <span class="card-title">Nova Despesa Fixa</span>
+                    <span class="card-title" id="form-despesa-fixa-titulo">Nova Despesa Fixa</span>
                 </div>
                 <div class="form-group">
                     <label>Descrição</label>
@@ -741,12 +786,26 @@
                         <option value="Outros">Outros</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Até quando? (opcional - deixe vazio para indeterminado)</label>
+                    <input type="date" id="input-fixa-data-fim">
+                </div>
                 <div class="btn-group">
                     <button class="btn btn-green" onclick="salvarDespesaFixa()">
                         <i data-lucide="check"></i> Salvar
                     </button>
                     <button class="btn btn-gray" onclick="fecharFormDespesaFixa()">Cancelar</button>
                 </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Receitas Fixas</span>
+                    <button class="btn btn-sm btn-teal" onclick="aplicarReceitasFixas()">
+                        <i data-lucide="zap"></i> Aplicar
+                    </button>
+                </div>
+                <div id="lista-receitas-fixas"></div>
             </div>
 
             <div class="card">
