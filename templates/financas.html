@@ -219,6 +219,17 @@
             text-align: center;
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
+            cursor: default;
+            transition: all 0.2s;
+        }
+
+        .summary-card.clickable {
+            cursor: pointer;
+        }
+
+        .summary-card.clickable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         }
 
         .summary-card.full {
@@ -638,11 +649,11 @@
                     <div class="summary-label">Saldo do Mês</div>
                     <div class="summary-value" id="resumo-saldo" style="color: white;">R$ 0,00</div>
                 </div>
-                <div class="summary-card">
+                <div class="summary-card clickable" onclick="mostrarAba('transacoes')">
                     <div class="summary-label">Receitas</div>
                     <div class="summary-value receita" id="resumo-receitas">R$ 0,00</div>
                 </div>
-                <div class="summary-card">
+                <div class="summary-card clickable" onclick="mostrarAba('transacoes')">
                     <div class="summary-label">Despesas</div>
                     <div class="summary-value despesa" id="resumo-despesas">R$ 0,00</div>
                 </div>
@@ -1118,9 +1129,11 @@
                 ]);
 
                 const resumo = await resumoRes.json();
-                const categorias = await categoriasRes.json();
+                const categoriasResposta = await categoriasRes.json();
                 const transacoes = await transacoesRes.json();
                 const previsao = await previsaoRes.json();
+
+                const categorias = categoriasResposta.categorias || {};
 
                 const saldoEl = document.getElementById('resumo-saldo');
                 saldoEl.textContent = formatarMoeda(resumo.saldo);
@@ -1136,14 +1149,15 @@
                 if (categoriasArray.length === 0) {
                     listaCategorias.innerHTML = '<div class="empty"><i data-lucide="pie-chart"></i><br>Nenhuma despesa neste mês.</div>';
                 } else {
-                    const totalDespesas = categoriasArray.reduce((sum, [, v]) => sum + v, 0);
+                    const totalDespesas = categoriasArray.reduce((sum, [, v]) => sum + (parseFloat(v) || 0), 0);
                     listaCategorias.innerHTML = categoriasArray.map(([cat, valor]) => {
-                        const pct = totalDespesas > 0 ? Math.round((valor / totalDespesas) * 100) : 0;
+                        const val = parseFloat(valor) || 0;
+                        const pct = totalDespesas > 0 ? Math.round((val / totalDespesas) * 100) : 0;
                         return `
                             <div style="margin-bottom: 8px;">
                                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 3px;">
                                     <span>${cat}</span>
-                                    <span>${formatarMoeda(valor)} (${pct}%)</span>
+                                    <span>${formatarMoeda(val)} (${pct}%)</span>
                                 </div>
                                 <div class="progress">
                                     <div class="progress-fill" style="width: ${pct}%; background-color: ${getCorCategoria(cat)};"></div>
@@ -1236,7 +1250,7 @@
                 data: {
                     labels: categoriasArray.map(([cat]) => cat),
                     datasets: [{
-                        data: categoriasArray.map(([, valor]) => valor),
+                        data: categoriasArray.map(([, valor]) => parseFloat(valor) || 0),
                         backgroundColor: categoriasArray.map(([cat]) => getCorCategoria(cat)),
                         borderWidth: 2,
                         borderColor: 'var(--surface)'
@@ -1252,6 +1266,13 @@
                                 font: { size: 10 },
                                 boxWidth: 10,
                                 padding: 8
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return `${ctx.label}: ${formatarMoeda(ctx.parsed)}`;
+                                }
                             }
                         }
                     }

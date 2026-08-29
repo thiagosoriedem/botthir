@@ -385,7 +385,7 @@ def get_user_despesas_categorias(user_id):
     mes = request.args.get("mes")
     ano = request.args.get("ano")
     categorias = obter_despesas_por_categoria(user_id, mes, ano)
-    return jsonify({"status": "success", **categorias})
+    return jsonify({"status": "success", "categorias": categorias})
 
 # API GET: Lista metas financeiras
 @app.route("/api/financas/<int:user_id>/metas", methods=["GET"])
