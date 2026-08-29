@@ -567,12 +567,15 @@ def add_user_investimento(user_id):
     taxa_anual = data.get("taxa_anual", 0)
     data_inicio = data.get("data_inicio")
     observacoes = data.get("observacoes", "")
+    quantidade = data.get("quantidade")
+    preco_medio = data.get("preco_medio")
 
     if not nome or not valor_investido:
         return jsonify({"status": "error", "message": "Dados incompletos"}), 400
 
     sucesso, msg = salvar_investimento(
-        user_id, nome, tipo, valor_investido, corretora, taxa_anual, data_inicio, observacoes
+        user_id, nome, tipo, valor_investido, corretora, taxa_anual, data_inicio, observacoes,
+        quantidade, preco_medio
     )
     return jsonify({"status": "success" if sucesso else "error", "message": msg})
 

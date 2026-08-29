@@ -705,7 +705,8 @@ def aplicar_receitas_fixas(user_id, mes=None, ano=None):
 # ============================================
 
 def salvar_investimento(user_id, nome, tipo, valor_investido, corretora="",
-                        taxa_anual=0.0, data_inicio=None, observacoes=""):
+                        taxa_anual=0.0, data_inicio=None, observacoes="",
+                        quantidade=None, preco_medio=None):
     """Salva um investimento (corretora, banco digital, etc)."""
     if not db:
         return False, "Database offline"
@@ -729,6 +730,8 @@ def salvar_investimento(user_id, nome, tipo, valor_investido, corretora="",
             "taxa_anual": float(taxa_anual),  # Taxa de rendimento anual estimada (%)
             "data_inicio": data_inicio,
             "observacoes": observacoes,
+            "quantidade": float(quantidade) if quantidade else None,  # Quantidade de cotas
+            "preco_medio": float(preco_medio) if preco_medio else None,  # Preço médio por cota
             "criado_em": datetime.now(),
         }
 
