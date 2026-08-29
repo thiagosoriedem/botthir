@@ -1994,14 +1994,29 @@
 
         let investimentoEmEdicao = null;
 
+        function atualizarCamposCotas() {
+            const tipo = document.getElementById('input-inv-tipo').value;
+            const groupQtd = document.getElementById('group-inv-quantidade');
+            const groupPreco = document.getElementById('group-inv-preco-medio');
+            const temCotas = ['acao', 'fii', 'cripto'].includes(tipo);
+            groupQtd.style.display = temCotas ? 'block' : 'none';
+            groupPreco.style.display = temCotas ? 'block' : 'none';
+        }
+
+        document.getElementById('input-inv-tipo').addEventListener('change', atualizarCamposCotas);
+
         function abrirFormInvestimento() {
             investimentoEmEdicao = null;
             document.getElementById('input-inv-nome').value = '';
+            document.getElementById('input-inv-tipo').value = 'acao';
             document.getElementById('input-inv-valor').value = '';
             document.getElementById('input-inv-corretora').value = '';
+            document.getElementById('input-inv-quantidade').value = '';
+            document.getElementById('input-inv-preco-medio').value = '';
             document.getElementById('input-inv-taxa').value = '';
             document.getElementById('input-inv-data').value = new Date().toISOString().split('T')[0];
             document.getElementById('input-inv-obs').value = '';
+            atualizarCamposCotas();
             document.getElementById('form-investimento').classList.remove('hidden');
         }
 
