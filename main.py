@@ -74,6 +74,9 @@ def get_main_menu_keyboard():
             [
                 {"text": "🧠 Abrir App de Flashcards", "web_app": {"url": f"{APP_URL}/flashcards"}}
             ],
+            [
+                {"text": "💸 Abrir App Finanças", "web_app": {"url": f"{APP_URL}/financas"}}
+            ],
         ]
     }
 
